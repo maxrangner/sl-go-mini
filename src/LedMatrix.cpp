@@ -29,9 +29,7 @@ void LedMatrix::changeColors() {
 }
 
 void LedMatrix::displayDeparture() {
-    Serial.println("LedMatrix displayDeparture()");
     pixels.clear();
     pixels.setPixelColor(activePixel++, pixels.Color(r, g, b));
-    Serial.print(r); Serial.print(g); Serial.println(b);
     pixels.show();
 }
