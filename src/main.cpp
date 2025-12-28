@@ -18,4 +18,5 @@ void setup() {
 }
 
 void loop() {
+  // Everything is run through the systemUiTask and dataFetcherTask in SystemManager
 }

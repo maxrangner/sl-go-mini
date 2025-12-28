@@ -9,7 +9,6 @@ void SystemManager::init() {
     Serial.println("SystemManager init()");
     
     matrix.init();
-    wifiInit();
     dataQueue = xQueueCreate(QUEUE_LEN, 4);
     mainButton = buttonMng.addButton(BUTTON_PIN, true);
     dataFetcher.init(dataQueue);
@@ -40,31 +39,23 @@ void SystemManager::init() {
     ); 
 }
 
-void SystemManager::wifiInit() {
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(SSID, PASSWORD);
-    Serial.print("Connecting to wifi.");
-    while (WiFi.status() != WL_CONNECTED) {
-        Serial.print(".");
-        vTaskDelay(500);
-    }
-    Serial.println(WiFi.localIP());
-}
-
 void SystemManager::run() {
     buttonMng.updateAll();
-    if (mainButton->wasPushed()) {
-        matrix.displayDeparture();
-        Serial.print("Button pushed on core: "); Serial.println(xPortGetCoreID());
-    }
-    if (mainButton->wasHeld()) {
-        matrix.changeColors();
-        Serial.print("Button held on core: "); Serial.println(xPortGetCoreID());
-    }
-    BaseType_t queueReturnStatus = xQueueReceive(dataQueue, (void *)&receiveNum, 4);
-    if (queueReturnStatus == pdTRUE) {
-        Serial.print("Data received on core: "); Serial.print(xPortGetCoreID());
-        Serial.print(" : "); Serial.println(receiveNum);
+    switch (state) {
+        case SystemState::BOOT:
+            WiFi.mode(WIFI_STA);
+            WiFi.begin(SSID, PASSWORD);
+            state = SystemState::CONNECTING;
+            break;
+        case SystemState::CONNECTING:
+            if (WiFi.status() == WL_CONNECTED) {
+                Serial.println(WiFi.localIP());
+                state = SystemState::CONNECTED;
+            }
+            break;
+        case SystemState::CONNECTED:
+            // Code
+            break;
     }
 }
 
@@ -72,11 +63,11 @@ void SystemManager::systemUiTask(void* pvParameters) {
     Serial.print("systemUiTask running on core ");
     Serial.println(xPortGetCoreID());
 
-    SystemManager* self = static_cast<SystemManager*>(pvParameters);
+    SystemManager* systemManager = static_cast<SystemManager*>(pvParameters);
 
     while(1) {
-        self->run();
-        vTaskDelay(1);
+        systemManager->run();
+        vTaskDelay(10);
     }
 }
 
@@ -86,10 +77,26 @@ void SystemManager::dataFetcherTask(void* pvParameters) {
     Serial.println(xPortGetCoreID());
 
     DataFetcher* data = static_cast<DataFetcher*>(pvParameters);
-    BaseType_t queueReturnStatus;
 
     while(1) {
         data->run();
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        vTaskDelay(pdMS_TO_TICKS(200));
     } 
 }
+
+// void SystemManager::run() {
+//     buttonMng.updateAll();
+//     if (mainButton->wasPushed()) {
+//         matrix.displayDeparture();
+//         Serial.print("Button pushed on core: "); Serial.println(xPortGetCoreID());
+//     }
+//     if (mainButton->wasHeld()) {
+//         matrix.changeColors();
+//         Serial.print("Button held on core: "); Serial.println(xPortGetCoreID());
+//     }
+//     BaseType_t queueReturnStatus = xQueueReceive(dataQueue, (void *)&receiveNum, 4);
+//     if (queueReturnStatus == pdTRUE) {
+//         Serial.print("Data received on core: "); Serial.print(xPortGetCoreID());
+//         Serial.print(" : "); Serial.println(receiveNum);
+//     }
+// }

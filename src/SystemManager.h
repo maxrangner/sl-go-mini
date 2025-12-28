@@ -6,7 +6,8 @@
 #include "DataFetcher.h"
 
 enum class SystemState {
-    NOT_CONNECTED,       // 0
+    BOOT,
+    CONNECTING,
     CONNECTED,           // 1
     SETUP                // 2
 };
@@ -16,7 +17,7 @@ class SystemManager {
     Button* mainButton;
     ButtonManager buttonMng;
     LedMatrix matrix;
-    SystemState state = SystemState::NOT_CONNECTED;
+    SystemState state = SystemState::BOOT;
     uint8_t receiveNum = 0;
 
     // Tasks
@@ -28,7 +29,6 @@ class SystemManager {
 public:
     SystemManager();
     void init();
-    void wifiInit();
     void run();
     static void systemUiTask(void* pvParameters);
     static void dataFetcherTask(void* pvParameters);
