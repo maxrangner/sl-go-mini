@@ -12,10 +12,10 @@ enum class SystemState {
 };
 
 class SystemManager {
-    NetworkManager _NetworkMng;
-    Button* _Button;
-    ButtonManager _ButtonManager;
-    LedMatrix _Matrix;
+    NetworkManager NetworkMng;
+    Button* mainButton;
+    ButtonManager ButtonMng;
+    LedMatrix Matrix;
     SystemState state = SystemState::NOT_CONNECTED;
     uint8_t receiveNum = 0;
 
@@ -28,6 +28,8 @@ class SystemManager {
 public:
     SystemManager();
     void init();
+    void wifiInit();
+    void run();
     static void systemManagerTask(void* pvParameters);
     static void systemUiTask(void* pvParameters);
     static void networkTask(void* pvParameters);

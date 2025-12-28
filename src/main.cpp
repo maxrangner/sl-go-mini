@@ -2,7 +2,6 @@
 #include "config.h"
 #include "SystemManager.h"
 /* To be included:
-#include "WiFi.h"
 #include <ArduinoJson.h>
 #include "WebServer.h"
 #include "Preferences.h"

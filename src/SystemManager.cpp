@@ -7,11 +7,12 @@ SystemManager::SystemManager() {
 
 void SystemManager::init() {
     Serial.println("SystemManager init()");
-
-    _Button = _ButtonManager.addButton(BUTTON_PIN, true);
-    _Matrix.init();
+    
+    Matrix.init();
+    wifiInit();
     dataQueue = xQueueCreate(QUEUE_LEN, 4);
-    _NetworkMng.init(dataQueue);
+    mainButton = ButtonMng.addButton(BUTTON_PIN, true);
+    NetworkMng.init(dataQueue);
 
     if (dataQueue != nullptr) {
         Serial.println("Queue created!");
@@ -32,7 +33,7 @@ void SystemManager::init() {
       networkTask,
       "dataTask",
       8192,
-      &_NetworkMng,
+      &NetworkMng,
       0,
       &networkTaskHandle,
       1
@@ -41,7 +42,7 @@ void SystemManager::init() {
 
 void SystemManager::wifiInit() {
     WiFi.mode(WIFI_STA);
-    WiFi.begin();
+    WiFi.begin(SSID, PASSWORD);
     Serial.print("Connecting to wifi.");
     while (WiFi.status() != WL_CONNECTED) {
         Serial.print(".");
@@ -50,29 +51,32 @@ void SystemManager::wifiInit() {
     Serial.println(WiFi.localIP());
 }
 
+void SystemManager::run() {
+    ButtonMng.updateAll();
+    if (mainButton->wasPushed()) {
+        Matrix.displayDeparture();
+        Serial.print("Button pushed on core: "); Serial.println(xPortGetCoreID());
+    }
+    if (mainButton->wasHeld()) {
+        Matrix.changeColors();
+        Serial.print("Button held on core: "); Serial.println(xPortGetCoreID());
+    }
+    BaseType_t queueReturnStatus = xQueueReceive(dataQueue, (void *)&receiveNum, 4);
+    if (queueReturnStatus == pdTRUE) {
+        Serial.print("Data received on core: "); Serial.print(xPortGetCoreID());
+        Serial.print(" : "); Serial.println(receiveNum);
+    }
+}
+
 void SystemManager::systemUiTask(void* pvParameters) {
     vTaskDelay(200);
     Serial.print("systemUiTask running on core ");
     Serial.println(xPortGetCoreID());
 
     SystemManager* self = static_cast<SystemManager*>(pvParameters);
-    BaseType_t queueReturnStatus;
 
     while(1) {
-        self->_ButtonManager.updateAll();
-        if (self->_Button->wasPushed()) {
-            self->_Matrix.displayDeparture();
-            Serial.print("Button pushed on core: "); Serial.println(xPortGetCoreID());
-        }
-        if (self->_Button->wasHeld()) {
-            self->_Matrix.changeColors();
-            Serial.print("Button held on core: "); Serial.println(xPortGetCoreID());
-        }
-        queueReturnStatus = xQueueReceive(self->dataQueue, (void *)&self->receiveNum, 4);
-        if (queueReturnStatus == pdTRUE) {
-            Serial.print("Data received on core: "); Serial.print(xPortGetCoreID());
-            Serial.print(" : "); Serial.println(self->receiveNum);
-        }
+        self->run();
         vTaskDelay(1);
     }
 }
@@ -82,7 +86,6 @@ void SystemManager::networkTask(void* pvParameters) {
     Serial.println(xPortGetCoreID());
 
     NetworkManager* net = static_cast<NetworkManager*>(pvParameters);
-
     BaseType_t queueReturnStatus;
 
     while(1) {
