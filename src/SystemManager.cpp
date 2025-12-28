@@ -8,11 +8,11 @@ SystemManager::SystemManager() {
 void SystemManager::init() {
     Serial.println("SystemManager init()");
     
-    Matrix.init();
+    matrix.init();
     wifiInit();
     dataQueue = xQueueCreate(QUEUE_LEN, 4);
-    mainButton = ButtonMng.addButton(BUTTON_PIN, true);
-    NetworkMng.init(dataQueue);
+    mainButton = buttonMng.addButton(BUTTON_PIN, true);
+    dataFetcher.init(dataQueue);
 
     if (dataQueue != nullptr) {
         Serial.println("Queue created!");
@@ -30,10 +30,10 @@ void SystemManager::init() {
     ); 
 
     xTaskCreatePinnedToCore(     // Data Task
-      networkTask,
-      "dataTask",
+      dataFetcherTask,
+      "dataFetcherTask",
       8192,
-      &NetworkMng,
+      &dataFetcher,
       0,
       &networkTaskHandle,
       1
@@ -52,13 +52,13 @@ void SystemManager::wifiInit() {
 }
 
 void SystemManager::run() {
-    ButtonMng.updateAll();
+    buttonMng.updateAll();
     if (mainButton->wasPushed()) {
-        Matrix.displayDeparture();
+        matrix.displayDeparture();
         Serial.print("Button pushed on core: "); Serial.println(xPortGetCoreID());
     }
     if (mainButton->wasHeld()) {
-        Matrix.changeColors();
+        matrix.changeColors();
         Serial.print("Button held on core: "); Serial.println(xPortGetCoreID());
     }
     BaseType_t queueReturnStatus = xQueueReceive(dataQueue, (void *)&receiveNum, 4);
@@ -69,7 +69,6 @@ void SystemManager::run() {
 }
 
 void SystemManager::systemUiTask(void* pvParameters) {
-    vTaskDelay(200);
     Serial.print("systemUiTask running on core ");
     Serial.println(xPortGetCoreID());
 
@@ -81,14 +80,16 @@ void SystemManager::systemUiTask(void* pvParameters) {
     }
 }
 
-void SystemManager::networkTask(void* pvParameters) {
-    Serial.print("networkTask running on core ");
+void SystemManager::dataFetcherTask(void* pvParameters) {
+    vTaskDelay(200);
+    Serial.print("dataFetcherTask running on core ");
     Serial.println(xPortGetCoreID());
 
-    NetworkManager* net = static_cast<NetworkManager*>(pvParameters);
+    DataFetcher* data = static_cast<DataFetcher*>(pvParameters);
     BaseType_t queueReturnStatus;
 
     while(1) {
+        data->run();
         vTaskDelay(pdMS_TO_TICKS(1000));
     } 
 }

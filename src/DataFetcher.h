@@ -1,10 +1,10 @@
 #pragma once
 #include <Arduino.h>
 
-class NetworkManager {
+class DataFetcher {
     QueueHandle_t dataQueue = nullptr;
 public:
-    NetworkManager();
+    DataFetcher();
     void init(QueueHandle_t queue);
-    void loop();
+    void run();
 };

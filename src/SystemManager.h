@@ -3,7 +3,7 @@
 #include "WiFi.h"
 #include "GawiButtons.h"
 #include "LedMatrix.h"
-#include "NetworkManager.h"
+#include "DataFetcher.h"
 
 enum class SystemState {
     NOT_CONNECTED,       // 0
@@ -12,10 +12,10 @@ enum class SystemState {
 };
 
 class SystemManager {
-    NetworkManager NetworkMng;
+    DataFetcher dataFetcher;
     Button* mainButton;
-    ButtonManager ButtonMng;
-    LedMatrix Matrix;
+    ButtonManager buttonMng;
+    LedMatrix matrix;
     SystemState state = SystemState::NOT_CONNECTED;
     uint8_t receiveNum = 0;
 
@@ -30,7 +30,6 @@ public:
     void init();
     void wifiInit();
     void run();
-    static void systemManagerTask(void* pvParameters);
     static void systemUiTask(void* pvParameters);
-    static void networkTask(void* pvParameters);
+    static void dataFetcherTask(void* pvParameters);
 };
