@@ -3,6 +3,7 @@
 #include "WiFi.h"
 #include "GawiButtons.h"
 #include "LedMatrix.h"
+#include "NetworkManager.h"
 
 enum class SystemState {
     NOT_CONNECTED,       // 0
@@ -11,26 +12,23 @@ enum class SystemState {
 };
 
 class SystemManager {
+    NetworkManager _NetworkMng;
     Button* _Button;
     ButtonManager _ButtonManager;
-    LedMatrix Matrix;
-    SystemState _State = SystemState::NOT_CONNECTED;
-    uint8_t num = 0;
+    LedMatrix _Matrix;
+    SystemState state = SystemState::NOT_CONNECTED;
     uint8_t receiveNum = 0;
 
     // Tasks
-    TaskHandle_t systemManagerTaskHandle = nullptr;
-    TaskHandle_t uiTaskHandle = nullptr;
-    TaskHandle_t dataTaskHandle = nullptr;
+    TaskHandle_t systemUiTaskHandle = nullptr;
+    TaskHandle_t networkTaskHandle = nullptr;
 
     // Queues
     QueueHandle_t dataQueue = nullptr;
-    QueueHandle_t stateQueue = nullptr;
-    QueueHandle_t departureQueue = nullptr;
 public:
     SystemManager();
     void init();
     static void systemManagerTask(void* pvParameters);
-    static void uiTask(void* pvParameters);
-    static void dataTask(void* pvParameters);
+    static void systemUiTask(void* pvParameters);
+    static void networkTask(void* pvParameters);
 };
