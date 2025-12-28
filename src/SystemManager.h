@@ -1,27 +1,33 @@
 #pragma once
 #include "freertos.h"
-#include "WiFi.h"
+
 #include "GawiButtons.h"
 #include "LedMatrix.h"
-#include "DataFetcher.h"
+#include "NetworkManager.h"
 
 enum class SystemState {
     BOOT,
     CONNECTING,
     CONNECTED,           // 1
+    DISCONNECTED,
     SETUP                // 2
 };
 
 class SystemManager {
-    DataFetcher dataFetcher;
+    // Class instanses
+    NetworkManager networkManager;
     Button* mainButton;
     ButtonManager buttonMng;
     LedMatrix matrix;
+
+    // Variables
     SystemState state = SystemState::BOOT;
+    unsigned long now;
+    unsigned long prevTime;
     uint8_t receiveNum = 0;
 
     // Tasks
-    TaskHandle_t systemUiTaskHandle = nullptr;
+    TaskHandle_t systemTaskHandle = nullptr;
     TaskHandle_t networkTaskHandle = nullptr;
 
     // Queues
@@ -30,6 +36,6 @@ public:
     SystemManager();
     void init();
     void run();
-    static void systemUiTask(void* pvParameters);
-    static void dataFetcherTask(void* pvParameters);
+    static void systemTask(void* pvParameters);
+    static void networkTask(void* pvParameters);
 };

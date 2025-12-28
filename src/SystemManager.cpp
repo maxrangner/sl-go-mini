@@ -1,39 +1,37 @@
 #include "SystemManager.h"
-#include "credentials.h"
+
 
 SystemManager::SystemManager() {
-    
 }
 
 void SystemManager::init() {
-    Serial.println("SystemManager init()");
-    
     matrix.init();
-    dataQueue = xQueueCreate(QUEUE_LEN, 4);
     mainButton = buttonMng.addButton(BUTTON_PIN, true);
-    dataFetcher.init(dataQueue);
-
+    dataQueue = xQueueCreate(QUEUE_LEN, 4);
     if (dataQueue != nullptr) {
         Serial.println("Queue created!");
     }
-    Serial.print("Initializing SystemManager on core: "); Serial.println(xPortGetCoreID()); 
+    networkManager.init(dataQueue);
+    now = millis();
+    prevTime = 0;
     
+    // Create tasks
     xTaskCreatePinnedToCore(     // UI Task
-      systemUiTask,              // Function to implement the task
+      systemTask,                // Function to implement the task
       "systemUiTask",            // Name of the task
       4096,                      // Stack size in words
       this,                      // Task input parameter
       1,                         // Priority of the task
-      &systemUiTaskHandle,       // Task handle.
+      &systemTaskHandle,         // Task handle.
       0                          // Core where the task should run
     ); 
 
     xTaskCreatePinnedToCore(     // Data Task
-      dataFetcherTask,
-      "dataFetcherTask",
+      networkTask,
+      "networkTask",
       8192,
-      &dataFetcher,
-      0,
+      &networkManager,
+      1,
       &networkTaskHandle,
       1
     ); 
@@ -43,24 +41,14 @@ void SystemManager::run() {
     buttonMng.updateAll();
     switch (state) {
         case SystemState::BOOT:
-            WiFi.mode(WIFI_STA);
-            WiFi.begin(SSID, PASSWORD);
-            state = SystemState::CONNECTING;
             break;
         case SystemState::CONNECTING:
-            if (WiFi.status() == WL_CONNECTED) {
-                Serial.println(WiFi.localIP());
-                state = SystemState::CONNECTED;
-            }
-            break;
-        case SystemState::CONNECTED:
-            // Code
             break;
     }
 }
 
-void SystemManager::systemUiTask(void* pvParameters) {
-    Serial.print("systemUiTask running on core ");
+void SystemManager::systemTask(void* pvParameters) {
+    Serial.print("systemTask running on core ");
     Serial.println(xPortGetCoreID());
 
     SystemManager* systemManager = static_cast<SystemManager*>(pvParameters);
@@ -71,15 +59,15 @@ void SystemManager::systemUiTask(void* pvParameters) {
     }
 }
 
-void SystemManager::dataFetcherTask(void* pvParameters) {
+void SystemManager::networkTask(void* pvParameters) {
     vTaskDelay(200);
-    Serial.print("dataFetcherTask running on core ");
+    Serial.print("networkTask running on core ");
     Serial.println(xPortGetCoreID());
 
-    DataFetcher* data = static_cast<DataFetcher*>(pvParameters);
+    NetworkManager* network = static_cast<NetworkManager*>(pvParameters);
 
     while(1) {
-        data->run();
+        network->run();
         vTaskDelay(pdMS_TO_TICKS(200));
     } 
 }
