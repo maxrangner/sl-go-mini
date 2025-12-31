@@ -1,8 +1,9 @@
 #pragma once
 #include <Arduino.h>
+#include "NetworkManager.h"
 
 namespace Utils {
-    void writeCharArray(char* target, size_t targetSize, const char* source) {
+    inline void writeCharArray(char* target, size_t targetSize, const char* source) {
         if (targetSize == 0 || source == nullptr) return;
     
         target[0] = '\0';
@@ -13,3 +14,4 @@ namespace Utils {
         target[i] = '\0';
     }
 }
+

@@ -1,9 +1,9 @@
 #pragma once
 #include "freertos.h"
-
 #include "GawiButtons.h"
 #include "LedMatrix.h"
 #include "NetworkManager.h"
+#include "utils.h"
 
 enum class SystemState {
     BOOT,
@@ -25,6 +25,7 @@ class SystemManager {
     unsigned long now;
     unsigned long prevTime;
     uint8_t receiveNum = 0;
+    QueueMessage receivedData;
 
     // Tasks
     TaskHandle_t systemTaskHandle = nullptr;

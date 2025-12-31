@@ -1,5 +1,5 @@
 #include "SystemManager.h"
-
+#include "networkDebug.h"
 
 SystemManager::SystemManager() {
 }
@@ -7,7 +7,7 @@ SystemManager::SystemManager() {
 void SystemManager::init() {
     matrix.init();
     mainButton = buttonMng.addButton(BUTTON_PIN, true);
-    dataQueue = xQueueCreate(QUEUE_LEN, 4);
+    dataQueue = xQueueCreate(QUEUE_LEN, sizeof(QueueMessage));
     if (dataQueue != nullptr) {
         Serial.println("Queue created!");
     }
@@ -41,6 +41,13 @@ void SystemManager::run() {
     buttonMng.updateAll();
     switch (state) {
         case SystemState::BOOT:
+            if (mainButton->wasPushed()) {
+                Serial.print("Button pushed on core: "); Serial.println(xPortGetCoreID());
+            }
+            if (xQueueReceive(dataQueue, (void *)&receivedData, sizeof(QueueMessage)) == true) {
+                Serial.print("Data received on core: "); Serial.print(xPortGetCoreID());
+                Serial.println(" : "); NetworkDebug::debugPrintQueueMessage(receivedData);
+            }
             break;
         case SystemState::CONNECTING:
             break;
@@ -55,7 +62,7 @@ void SystemManager::systemTask(void* pvParameters) {
 
     while(1) {
         systemManager->run();
-        vTaskDelay(10);
+        vTaskDelay(pdMS_TO_TICKS(10));
     }
 }
 

@@ -3,6 +3,9 @@
 #include "HTTPClient.h"
 #include "utils.h"
 #include "credentials.h"
+#include "networkDebug.h"
+
+
 
 NetworkManager::NetworkManager() {}
 
@@ -12,6 +15,7 @@ void NetworkManager::init(QueueHandle_t queue) {
     reconnectionAttempts = 0;
     prevReconnectAttempt = 0;
     prevApiFetch = 0;
+    hasNewData = false;
 }
 
 void NetworkManager::run() {
@@ -27,6 +31,7 @@ void NetworkManager::run() {
                 networkState = NetworkState::DISCONNECTED;
             } else {
                 fetchApi();
+                if (hasNewData) sendToQueue();
             }
             break;
         case NetworkState::DISCONNECTED:
@@ -60,30 +65,28 @@ void NetworkManager::wifiWaitingForConnection() {
         Serial.print(".");
         vTaskDelay(500);
     } else if (WiFi.status() == WL_CONNECTED) {
-        Serial.println(""); Serial.print("Connected with IP: "); Serial.print(WiFi.localIP());
+        Serial.println(""); Serial.print("Connected with IP: "); Serial.println(WiFi.localIP());
         networkState = NetworkState::CONNECTED_STA;
     }
 }
 
 void NetworkManager::fetchApi() {
-    Serial.println("fetchApi()");
     unsigned long now = millis();
     String apiPayload;
     if (now - prevApiFetch >= apiTiming) {
-        Serial.println("Fetching Api!");
+        Serial.println(""); Serial.println("Fetching Api!");
 
         HTTPClient http;
         http.useHTTP10(true);
         http.begin(apiCombinedURL);
         uint8_t httpResponse = http.GET();
         if (httpResponse > 0) {
-            Serial.print("HTTP Response code: "); Serial.println(httpResponse);
-
             JsonDocument payload;
             DeserializationError error = deserializeJson(payload, http.getStream());
             if (!error) parseJson(payload);
         }
         http.end();
+        hasNewData = true;
         prevApiFetch = now;
     }
 }
@@ -107,7 +110,8 @@ void NetworkManager::parseJson(JsonDocument payload) {
             updateFields(direction1, departure);
         }
     }
-    debugPrintQueueMessage(latestData);
+    // Serial.println("Parsed json: ");
+    // NetworkDebug::debugPrintQueueMessage(latestData);
 }
 
 void NetworkManager::updateFields(Direction& directionObject, JsonVariant source) {
@@ -120,22 +124,18 @@ void NetworkManager::updateFields(Direction& directionObject, JsonVariant source
         directionObject.departures[directionObject.count].directionCode = source["direction_code"];
         directionObject.count++;
     }
+    latestData.networkMangerState = networkState;
 }
 
-static void debugPrintQueueMessage(const QueueMessage& data) {
-    for (uint8_t dir = 0; dir < 2; dir++) {
-        Serial.print("Direction ");
-        Serial.print(dir);
-        Serial.print("     Num entries: ");
-        Serial.println(data.direction[dir].count);
-
-        for (uint8_t i = 0; i < data.direction[dir].count; i++) {
-            Serial.print("  [");
-            Serial.print(i);
-            Serial.print("] time = ");
-            Serial.print(data.direction[dir].departures[i].time);
-            Serial.print("     dir = ");
-            Serial.println(data.direction[dir].departures[i].directionCode);
-        }
+bool NetworkManager::sendToQueue() {
+    BaseType_t returnStatus;
+    returnStatus = xQueueOverwrite(dataQueue, (void *)&latestData);
+    hasNewData = false;
+    if (returnStatus == pdTRUE) {
+        Serial.println("Packet successfully sent to queue.");
+        return true;
+    } else {
+        Serial.println("Error sending packet to queue.");
+        return false;
     }
 }

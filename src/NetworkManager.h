@@ -3,7 +3,6 @@
 #include <ArduinoJson.h>
 #include "config.h"
 
-
 enum class NetworkState {
     INIT,
     CONNECTING_STA,
@@ -30,6 +29,7 @@ struct Direction {
 
 struct QueueMessage{
     Direction direction[2];
+    NetworkState networkMangerState;
 };
 
 class NetworkManager {
@@ -39,6 +39,7 @@ class NetworkManager {
     const unsigned long apiTiming = 10'000;
     unsigned long prevReconnectAttempt;
     unsigned long prevApiFetch;
+    bool hasNewData;
     uint8_t reconnectionAttempts;
     String apiId = "v1/sites/9143/departures?&forecast=360";
     String apiCombinedURL = API_URL + apiId;
@@ -52,4 +53,5 @@ public:
     void fetchApi();
     void parseJson(JsonDocument doc);
     void updateFields(Direction& directionObject, JsonVariant source);
+    bool sendToQueue();
 };
