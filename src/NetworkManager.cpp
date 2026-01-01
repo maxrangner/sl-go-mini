@@ -5,15 +5,16 @@
 #include "credentials.h"
 #include "networkDebug.h"
 
-
+void debugPrint();
 
 NetworkManager::NetworkManager() {}
 
 void NetworkManager::init(QueueHandle_t queue) {
     dataQueue = queue;
     networkState = NetworkState::INIT;
+    prevNetworkState = networkState;
     reconnectionAttempts = 0;
-    prevReconnectAttempt = 0;
+    timeReconnecting = 0;
     prevApiFetch = 0;
     hasNewData = false;
 }
@@ -21,53 +22,83 @@ void NetworkManager::init(QueueHandle_t queue) {
 void NetworkManager::run() {
     switch (networkState) {
         case NetworkState::INIT:
-            wifiConnect();
+            Serial.println("NetworkState::INIT");
+            wifiInit();
             break;
+
         case NetworkState::CONNECTING_STA:
+            if (networkState != prevNetworkState) {
+                Serial.println("NetworkState::CONNECTING_STA");
+                latestData.type = EventType::NO_WIFI;
+                hasNewData = true;
+            }
             wifiWaitingForConnection();
             break;
+
         case NetworkState::CONNECTED_STA:
+            if (networkState != prevNetworkState) Serial.println("NetworkState::CONNECTED_STA");
             if (WiFi.status() != WL_CONNECTED) {
                 networkState = NetworkState::DISCONNECTED;
             } else {
                 fetchApi();
-                if (hasNewData) sendToQueue();
             }
             break;
+
         case NetworkState::DISCONNECTED:
-            wifiConnect();
+            if (networkState != prevNetworkState) {
+                Serial.println("NetworkState::DISCONNECTED");
+                latestData.type = EventType::NO_WIFI;
+                hasNewData = true;
+            }
+            if (reconnectionAttempts < 5) {
+                WiFi.reconnect();
+                networkState = NetworkState::CONNECTING_STA;
+                timeReconnecting = millis();
+                reconnectionAttempts++;
+            } else {
+                reconnectionAttempts = 0;
+                wifiInit();
+            }
             break;
+
+        case NetworkState::ERROR:
+        Serial.println("Error");
+            if (networkState != prevNetworkState) {
+            }
+            break;
+
         default:
             break;
     }
+    if (networkState != prevNetworkState) {
+        prevNetworkState = networkState;
+    } 
+    if (hasNewData) sendToQueue();
+    debugPrint();
 }
 
-void NetworkManager::wifiConnect() {
-    Serial.println("wifiConnect()");
+void NetworkManager::wifiInit() {
+    Serial.println("wifiInit()");
 
-    unsigned long now = millis();
-    if (networkState == NetworkState::INIT || reconnectionAttempts > 5) {
-        WiFi.disconnect();
-        WiFi.mode(WIFI_STA);
-        WiFi.begin(SSID, PASSWORD);
-        Serial.print("Connecting to WiFi: "); Serial.print(SSID); 
-        networkState = NetworkState::CONNECTING_STA;
-        reconnectionAttempts = 0;
-    } else if (now - prevReconnectAttempt >= reconnectTiming) {
-        WiFi.reconnect();
-        prevReconnectAttempt = now;
-        reconnectionAttempts++;
-    }
+    WiFi.disconnect();
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(SSID, PASSWORD);
+    Serial.print("Connecting to WiFi: "); Serial.print(SSID); 
+    networkState = NetworkState::CONNECTING_STA;
+    timeReconnecting = millis();
 }
 
 void NetworkManager::wifiWaitingForConnection() {
-    if (WiFi.status() != WL_CONNECTED) {
-        Serial.print(".");
-        vTaskDelay(500);
-    } else if (WiFi.status() == WL_CONNECTED) {
-        Serial.println(""); Serial.print("Connected with IP: "); Serial.println(WiFi.localIP());
-        networkState = NetworkState::CONNECTED_STA;
-    }
+    unsigned long now = millis();
+    if (now - timeReconnecting < 50'000) {
+        if (WiFi.status() != WL_CONNECTED) {
+            Serial.print(".");
+            vTaskDelay(pdMS_TO_TICKS(500));
+        } else if (WiFi.status() == WL_CONNECTED) {
+            Serial.println(""); Serial.print("Connected with IP: "); Serial.println(WiFi.localIP());
+            networkState = NetworkState::CONNECTED_STA;
+        }
+    } else networkState = NetworkState::ERROR;
 }
 
 void NetworkManager::fetchApi() {
@@ -83,10 +114,19 @@ void NetworkManager::fetchApi() {
         if (httpResponse > 0) {
             JsonDocument payload;
             DeserializationError error = deserializeJson(payload, http.getStream());
-            if (!error) parseJson(payload);
+            if (!error) {
+                parseJson(payload);
+                latestData.type = EventType::DATA;
+                hasNewData = true;
+            } else {
+                latestData.type = EventType::NO_DATA;
+                hasNewData = true;
+            }
+        } else {
+            latestData.type = EventType::NO_DATA;
+            hasNewData = true;
         }
         http.end();
-        hasNewData = true;
         prevApiFetch = now;
     }
 }
@@ -116,15 +156,29 @@ void NetworkManager::parseJson(JsonDocument payload) {
 
 void NetworkManager::updateFields(Direction& directionObject, JsonVariant source) {
     if (directionObject.count < NUM_DEPARTURES) {
-        Utils::writeCharArray( // Display (time)
-            directionObject.departures[directionObject.count].time,
-            sizeof(directionObject.departures[directionObject.count].time),
-            source["display"]
-        );
+        // Time to departure
+        if (strchr(source["display"], ':') == NULL) {
+            directionObject.departures[directionObject.count].displayTimeType = TimeDisplayType::MINUTES;
+            char convertedMinutes[10];
+            Utils::convertTexttoMinutes(convertedMinutes, sizeof(convertedMinutes), source["display"]);
+            Utils::writeCharArray(
+                directionObject.departures[directionObject.count].time,
+                sizeof(directionObject.departures[directionObject.count].time),
+                convertedMinutes
+            );
+        } else {
+            directionObject.departures[directionObject.count].displayTimeType = TimeDisplayType::CLOCK_TIME;
+            Utils::writeCharArray(
+                directionObject.departures[directionObject.count].time,
+                sizeof(directionObject.departures[directionObject.count].time),
+                source["display"]
+            );
+        }
+        // Direction code
         directionObject.departures[directionObject.count].directionCode = source["direction_code"];
+
         directionObject.count++;
     }
-    latestData.networkMangerState = networkState;
 }
 
 bool NetworkManager::sendToQueue() {
@@ -132,10 +186,62 @@ bool NetworkManager::sendToQueue() {
     returnStatus = xQueueOverwrite(dataQueue, (void *)&latestData);
     hasNewData = false;
     if (returnStatus == pdTRUE) {
-        Serial.println("Packet successfully sent to queue.");
+        // Serial.println("Packet successfully sent to queue.");
         return true;
     } else {
-        Serial.println("Error sending packet to queue.");
+        // Serial.println("Error sending packet to queue.");
         return false;
     }
+}
+
+
+// WIFI DEBUG PRINT
+const char* netStateStr(NetworkState s) {
+    switch (s) {
+        case NetworkState::INIT: return "INIT";
+        case NetworkState::CONNECTING_STA: return "CONNECTING";
+        case NetworkState::CONNECTED_STA: return "CONNECTED";
+        case NetworkState::DISCONNECTED: return "DISCONNECTED";
+        case NetworkState::ERROR: return "ERROR";
+        default: return "UNKNOWN";
+    }
+}
+
+const char* wifiStatusStr(wl_status_t s) {
+    switch (s) {
+        case WL_IDLE_STATUS: return "IDLE";
+        case WL_NO_SSID_AVAIL: return "NO_SSID";
+        case WL_CONNECTED: return "CONNECTED";
+        case WL_CONNECT_FAILED: return "CONNECT_FAILED";
+        case WL_CONNECTION_LOST: return "CONNECTION_LOST";
+        case WL_DISCONNECTED: return "DISCONNECTED";
+        default: return "UNKNOWN";
+    }
+}
+
+void NetworkManager::debugPrint() {
+    unsigned long now = millis();
+
+    Serial.print("[NET] ");
+    Serial.print(netStateStr(networkState));
+
+    if (networkState != prevNetworkState) {
+        Serial.print(" (ENTRY)");
+    } else {
+        Serial.print("        ");
+    }
+
+    Serial.print(" | wifi=");
+    Serial.print(wifiStatusStr(WiFi.status()));
+    Serial.print("(");
+    Serial.print(WiFi.status());
+    Serial.print(")");
+
+    if (networkState == NetworkState::CONNECTING_STA) {
+        Serial.print(" | t=");
+        Serial.print((now - timeReconnecting) / 1000.0, 1);
+        Serial.print("/20s");
+    }
+
+    Serial.println();
 }

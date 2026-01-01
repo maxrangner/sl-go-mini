@@ -78,20 +78,3 @@ void SystemManager::networkTask(void* pvParameters) {
         vTaskDelay(pdMS_TO_TICKS(200));
     } 
 }
-
-// void SystemManager::run() {
-//     buttonMng.updateAll();
-//     if (mainButton->wasPushed()) {
-//         matrix.displayDeparture();
-//         Serial.print("Button pushed on core: "); Serial.println(xPortGetCoreID());
-//     }
-//     if (mainButton->wasHeld()) {
-//         matrix.changeColors();
-//         Serial.print("Button held on core: "); Serial.println(xPortGetCoreID());
-//     }
-//     BaseType_t queueReturnStatus = xQueueReceive(dataQueue, (void *)&receiveNum, 4);
-//     if (queueReturnStatus == pdTRUE) {
-//         Serial.print("Data received on core: "); Serial.print(xPortGetCoreID());
-//         Serial.print(" : "); Serial.println(receiveNum);
-//     }
-// }

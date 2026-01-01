@@ -11,7 +11,19 @@ enum class NetworkState {
     ERROR
 };
 
+enum class TimeDisplayType {
+    MINUTES,
+    CLOCK_TIME
+};
+
+enum class EventType {
+    NO_WIFI,
+    NO_DATA,
+    DATA
+};
+
 struct Departure {
+    TimeDisplayType displayTimeType;
     char time[10];
     // char destination[25];
     // char direction[25];
@@ -28,27 +40,29 @@ struct Direction {
 };
 
 struct QueueMessage{
+    EventType type;
     Direction direction[2];
-    NetworkState networkMangerState;
 };
 
 class NetworkManager {
     QueueHandle_t dataQueue = nullptr;
     NetworkState networkState;
+    NetworkState prevNetworkState;
     const unsigned long reconnectTiming = 5'000;
     const unsigned long apiTiming = 10'000;
-    unsigned long prevReconnectAttempt;
+    unsigned long timeReconnecting;
     unsigned long prevApiFetch;
     bool hasNewData;
     uint8_t reconnectionAttempts;
     String apiId = "v1/sites/9143/departures?&forecast=360";
     String apiCombinedURL = API_URL + apiId;
     QueueMessage latestData;
+    void debugPrint();
 public:
     NetworkManager();
     void init(QueueHandle_t queue);
     void run();
-    void wifiConnect();
+    void wifiInit();
     void wifiWaitingForConnection();
     void fetchApi();
     void parseJson(JsonDocument doc);
