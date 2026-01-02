@@ -20,61 +20,57 @@ void NetworkManager::init(QueueHandle_t queue) {
 }
 
 void NetworkManager::run() {
+    unsigned long now = millis();
     switch (networkState) {
         case NetworkState::INIT:
-            Serial.println("NetworkState::INIT");
             wifiInit();
             break;
 
         case NetworkState::CONNECTING_STA:
             if (networkState != prevNetworkState) {
-                Serial.println("NetworkState::CONNECTING_STA");
-                latestData.type = EventType::NO_WIFI;
-                hasNewData = true;
+                eventUpdate(EventType::NO_WIFI);
             }
-            wifiWaitingForConnection();
+
+            if (WiFi.status() == WL_CONNECTED) {
+                Serial.println(""); Serial.print("Connected with IP: "); Serial.println(WiFi.localIP());
+                networkState = NetworkState::CONNECTED_STA;
+                reconnectionAttempts = 0;
+            }
+
+            if (now - timeReconnecting >= reconnectTiming) {
+                reconnectionAttempts++;
+                if (reconnectionAttempts <= 5) {
+                    Serial.println("reconnect()");
+                    WiFi.reconnect();
+                    timeReconnecting = now;
+                } else {
+                    reconnectionAttempts = 0;
+                    wifiInit();
+                    timeReconnecting = now;
+                }
+            }
             break;
 
         case NetworkState::CONNECTED_STA:
-            if (networkState != prevNetworkState) Serial.println("NetworkState::CONNECTED_STA");
+            if (networkState != prevNetworkState) {
+                eventUpdate(EventType::NO_DATA);
+            }
             if (WiFi.status() != WL_CONNECTED) {
-                networkState = NetworkState::DISCONNECTED;
+                networkState = NetworkState::CONNECTING_STA;
             } else {
                 fetchApi();
-            }
-            break;
-
-        case NetworkState::DISCONNECTED:
-            if (networkState != prevNetworkState) {
-                Serial.println("NetworkState::DISCONNECTED");
-                latestData.type = EventType::NO_WIFI;
-                hasNewData = true;
-            }
-            if (reconnectionAttempts < 5) {
-                WiFi.reconnect();
-                networkState = NetworkState::CONNECTING_STA;
-                timeReconnecting = millis();
-                reconnectionAttempts++;
-            } else {
-                reconnectionAttempts = 0;
-                wifiInit();
+                // Set latestData.type here?
             }
             break;
 
         case NetworkState::ERROR:
-        Serial.println("Error");
             if (networkState != prevNetworkState) {
+                eventUpdate(EventType::NO_API_RESPONSE);
             }
             break;
-
-        default:
-            break;
     }
-    if (networkState != prevNetworkState) {
-        prevNetworkState = networkState;
-    } 
     if (hasNewData) sendToQueue();
-    debugPrint();
+    // debugPrint();
 }
 
 void NetworkManager::wifiInit() {
@@ -88,19 +84,6 @@ void NetworkManager::wifiInit() {
     timeReconnecting = millis();
 }
 
-void NetworkManager::wifiWaitingForConnection() {
-    unsigned long now = millis();
-    if (now - timeReconnecting < 50'000) {
-        if (WiFi.status() != WL_CONNECTED) {
-            Serial.print(".");
-            vTaskDelay(pdMS_TO_TICKS(500));
-        } else if (WiFi.status() == WL_CONNECTED) {
-            Serial.println(""); Serial.print("Connected with IP: "); Serial.println(WiFi.localIP());
-            networkState = NetworkState::CONNECTED_STA;
-        }
-    } else networkState = NetworkState::ERROR;
-}
-
 void NetworkManager::fetchApi() {
     unsigned long now = millis();
     String apiPayload;
@@ -110,22 +93,16 @@ void NetworkManager::fetchApi() {
         HTTPClient http;
         http.useHTTP10(true);
         http.begin(apiCombinedURL);
-        uint8_t httpResponse = http.GET();
+        int httpResponse = http.GET();
         if (httpResponse > 0) {
             JsonDocument payload;
             DeserializationError error = deserializeJson(payload, http.getStream());
             if (!error) {
                 parseJson(payload);
                 latestData.type = EventType::DATA;
-                hasNewData = true;
-            } else {
-                latestData.type = EventType::NO_DATA;
-                hasNewData = true;
-            }
-        } else {
-            latestData.type = EventType::NO_DATA;
-            hasNewData = true;
-        }
+            } else latestData.type = EventType::NO_API_RESPONSE;
+        } else latestData.type = EventType::NO_API_RESPONSE;
+        hasNewData = true;
         http.end();
         prevApiFetch = now;
     }
@@ -150,8 +127,7 @@ void NetworkManager::parseJson(JsonDocument payload) {
             updateFields(direction1, departure);
         }
     }
-    // Serial.println("Parsed json: ");
-    // NetworkDebug::debugPrintQueueMessage(latestData);
+    // Check if data is empty
 }
 
 void NetworkManager::updateFields(Direction& directionObject, JsonVariant source) {
@@ -194,6 +170,11 @@ bool NetworkManager::sendToQueue() {
     }
 }
 
+void NetworkManager::eventUpdate(EventType event) {
+    latestData.type = event;
+    hasNewData = true;
+    prevNetworkState = networkState;
+}
 
 // WIFI DEBUG PRINT
 const char* netStateStr(NetworkState s) {

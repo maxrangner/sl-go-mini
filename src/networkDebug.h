@@ -2,7 +2,7 @@
 #include "NetworkManager.h"
 
 namespace NetworkDebug {
-    inline static void debugPrintQueueMessage(const QueueMessage& data) {
+    inline static void debugPrintQueueMessage(const QueuePacket& data) {
         char buffer[512];          // justera vid behov
         size_t offset = 0;
 

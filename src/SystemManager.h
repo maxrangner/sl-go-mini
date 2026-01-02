@@ -6,11 +6,12 @@
 #include "utils.h"
 
 enum class SystemState {
-    BOOT,
-    CONNECTING,
-    CONNECTED,           // 1
-    DISCONNECTED,
-    SETUP                // 2
+    BOOT, // 0
+    NO_WIFI, // 1
+    NO_DATA, // 2
+    NO_API_RESPONSE, // 3
+    DATA, // 4
+    SETUP
 };
 
 class SystemManager {
@@ -21,11 +22,12 @@ class SystemManager {
     LedMatrix matrix;
 
     // Variables
-    SystemState state = SystemState::BOOT;
+    SystemState systemState;
+    SystemState prevSystemState;
     unsigned long now;
     unsigned long prevTime;
     uint8_t receiveNum = 0;
-    QueueMessage receivedData;
+    QueuePacket receivedData;
 
     // Tasks
     TaskHandle_t systemTaskHandle = nullptr;
@@ -33,6 +35,9 @@ class SystemManager {
 
     // Queues
     QueueHandle_t dataQueue = nullptr;
+
+    // Methods
+    void setSystemState(EventType event);
 public:
     SystemManager();
     void init();

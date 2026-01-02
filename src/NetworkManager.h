@@ -19,6 +19,7 @@ enum class TimeDisplayType {
 enum class EventType {
     NO_WIFI,
     NO_DATA,
+    NO_API_RESPONSE,
     DATA
 };
 
@@ -39,7 +40,7 @@ struct Direction {
     uint8_t count = 0;
 };
 
-struct QueueMessage{
+struct QueuePacket{
     EventType type;
     Direction direction[2];
 };
@@ -48,7 +49,7 @@ class NetworkManager {
     QueueHandle_t dataQueue = nullptr;
     NetworkState networkState;
     NetworkState prevNetworkState;
-    const unsigned long reconnectTiming = 5'000;
+    const unsigned long reconnectTiming = 10'000;
     const unsigned long apiTiming = 10'000;
     unsigned long timeReconnecting;
     unsigned long prevApiFetch;
@@ -56,16 +57,17 @@ class NetworkManager {
     uint8_t reconnectionAttempts;
     String apiId = "v1/sites/9143/departures?&forecast=360";
     String apiCombinedURL = API_URL + apiId;
-    QueueMessage latestData;
+    QueuePacket latestData;
     void debugPrint();
-public:
-    NetworkManager();
-    void init(QueueHandle_t queue);
-    void run();
     void wifiInit();
     void wifiWaitingForConnection();
     void fetchApi();
     void parseJson(JsonDocument doc);
     void updateFields(Direction& directionObject, JsonVariant source);
     bool sendToQueue();
+    void eventUpdate(EventType event);
+public:
+    NetworkManager();
+    void init(QueueHandle_t queue);
+    void run();
 };
