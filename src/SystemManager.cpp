@@ -55,26 +55,31 @@ void SystemManager::run() {
         case SystemState::BOOT:
             Serial.println("SystemState::BOOT");
             systemState = SystemState::NO_WIFI;
+            matrix.clearDisplay();
             break;
         case SystemState::NO_WIFI:
             if (systemState != prevSystemState) {
                 Serial.println("SystemState::NO_WIFI");
             }
+            matrix.clearDisplay();
             break;
         case SystemState::NO_DATA:
             if (systemState != prevSystemState) {
                 Serial.println("SystemState::NO_DATA");
             }
+            matrix.clearDisplay();
             break;
         case SystemState::DATA:
             if (systemState != prevSystemState) {
                 Serial.println("SystemState::DATA");
             }
+            matrix.displayDeparture(receivedData.direction[0].departures[0].time);
             break;
         case SystemState::NO_API_RESPONSE:
             if (systemState != prevSystemState) {
                 Serial.println("SystemState::NO_API_RESPONSE");
             }
+            matrix.clearDisplay();
             break;
         case SystemState::SETUP:
             break;

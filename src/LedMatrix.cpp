@@ -1,11 +1,6 @@
 #include "LedMatrix.h"
 
-
 LedMatrix::LedMatrix() : pixels(PIXELS_NUM, LED_PIN) {
-    activePixel = 0;
-    r = 10;
-    g = 0;
-    b = 0;
 }
 
 void LedMatrix::init() {
@@ -13,23 +8,24 @@ void LedMatrix::init() {
     pixels.begin();
 }
 
-void LedMatrix::changeColors() {
-    if (r == 10) {
-        r = 0;
-        g = 10;
-    }
-    else if (g == 10) {
-        g = 0;
-        b = 10;
-    }
-    else if (b = 10) {
-        b = 0;
-        r = 10;
-    }
+uint32_t LedMatrix::setColors(const uint8_t c[3]) {
+    return pixels.Color(c[0], c[1], c[2]);
 }
 
-void LedMatrix::displayDeparture() {
+void LedMatrix::displayDeparture(char* rawTime) {
     pixels.clear();
-    pixels.setPixelColor(activePixel++, pixels.Color(r, g, b));
+    uint8_t departureTime = atoi(rawTime);
+    const uint8_t* departure = numbers[departureTime];
+    uint8_t* nextColor = nullptr;
+    for (uint8_t i = 0; i < PIXELS_NUM; i++) {
+        if (departure[i] == 1) nextColor = green;
+        else nextColor = off;
+        pixels.setPixelColor(i, setColors(nextColor)); // G, R, B
+    }
+    pixels.show();
+}
+
+void LedMatrix::clearDisplay() {
+    pixels.clear();
     pixels.show();
 }
