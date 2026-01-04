@@ -1,9 +1,12 @@
 #include "NetworkManager.h"
 #include "WiFi.h"
+#include <esp_wifi.h>
 #include "HTTPClient.h"
 #include "utils.h"
 #include "credentials.h"
 #include "networkDebug.h"
+
+#include <esp_heap_caps.h>
 
 void debugPrint();
 
@@ -53,6 +56,7 @@ void NetworkManager::run() {
 
         case NetworkState::CONNECTED_STA:
             if (networkState != prevNetworkState) {
+                esp_wifi_set_ps(WIFI_PS_NONE);
                 eventUpdate(EventType::NO_DATA);
             }
             if (WiFi.status() != WL_CONNECTED) {
@@ -89,7 +93,7 @@ void NetworkManager::fetchApi() {
     String apiPayload;
     if (now - prevApiFetch >= apiTiming) {
         Serial.println(""); Serial.println("Fetching Api!");
-
+        
         HTTPClient http;
         http.useHTTP10(true);
         http.begin(apiCombinedURL);
@@ -104,6 +108,7 @@ void NetworkManager::fetchApi() {
         } else latestData.type = EventType::NO_API_RESPONSE;
         hasNewData = true;
         http.end();
+        vTaskDelay(pdMS_TO_TICKS(150));
         prevApiFetch = now;
     }
 }
@@ -131,29 +136,22 @@ void NetworkManager::parseJson(JsonDocument payload) {
 }
 
 void NetworkManager::updateFields(Direction& directionObject, JsonVariant source) {
+    uint8_t& index = directionObject.count;
     if (directionObject.count < NUM_DEPARTURES) {
-        // Time to departure
+        // Departure is in format: "xx min"
         if (strchr(source["display"], ':') == NULL) {
-            directionObject.departures[directionObject.count].displayTimeType = TimeDisplayType::MINUTES;
-            char convertedMinutes[10];
-            Utils::convertTexttoMinutes(convertedMinutes, sizeof(convertedMinutes), source["display"]);
-            Utils::writeCharArray(
-                directionObject.departures[directionObject.count].time,
-                sizeof(directionObject.departures[directionObject.count].time),
-                convertedMinutes
-            );
+            directionObject.departures[index].displayTimeType = TimeDisplayType::MINUTES;
+            directionObject.departures[index].minutes = Utils::convertTextToMinutes(source["display"]);
+        // Departure is in format: "xx:xx"
         } else {
-            directionObject.departures[directionObject.count].displayTimeType = TimeDisplayType::CLOCK_TIME;
+            directionObject.departures[index].displayTimeType = TimeDisplayType::CLOCK_TIME;
             Utils::writeCharArray(
-                directionObject.departures[directionObject.count].time,
-                sizeof(directionObject.departures[directionObject.count].time),
+                directionObject.departures[directionObject.count].clock_time,
+                sizeof(directionObject.departures[directionObject.count].clock_time),
                 source["display"]
             );
         }
-        // Direction code
-        directionObject.departures[directionObject.count].directionCode = source["direction_code"];
-
-        directionObject.count++;
+        directionObject.departures[index++].directionCode = source["direction_code"];
     }
 }
 

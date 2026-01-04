@@ -25,7 +25,8 @@ enum class EventType {
 
 struct Departure {
     TimeDisplayType displayTimeType;
-    char time[10];
+    uint8_t minutes;
+    char clock_time[10];
     // char destination[25];
     // char direction[25];
     uint8_t directionCode;

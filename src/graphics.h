@@ -1,8 +1,7 @@
 #pragma once
 #include <Arduino.h>
-#include <pgmspace.h>
 
-const uint8_t heart[64] PROGMEM = {
+inline constexpr uint8_t  heart[64] = {
     0,0,0,0,1,0,0,0,
     0,0,0,1,0,1,0,0,
     0,0,1,0,0,0,1,0,
@@ -13,7 +12,7 @@ const uint8_t heart[64] PROGMEM = {
     0,0,0,0,0,0,0,0
 };
 
-const uint8_t num_0[64] PROGMEM = {
+inline constexpr uint8_t  num_0[64] = {
     0,0,0,0,0,0,0,0,
     0,0,0,1,1,0,0,0,
     0,0,1,0,0,1,0,0,
@@ -24,7 +23,7 @@ const uint8_t num_0[64] PROGMEM = {
     0,0,0,0,0,0,0,0
 };
 
-const uint8_t num_1[64] PROGMEM = {
+inline constexpr uint8_t  num_1[64] = {
     0,0,0,0,0,0,0,0,
     0,0,0,0,1,0,0,0,
     0,0,0,1,1,0,0,0,
@@ -35,7 +34,7 @@ const uint8_t num_1[64] PROGMEM = {
     0,0,0,0,0,0,0,0
 };
 
-const uint8_t num_2[64] PROGMEM = {
+inline constexpr uint8_t  num_2[64] = {
     0,0,0,0,0,0,0,0,
     0,0,0,1,1,0,0,0,
     0,0,1,0,0,1,0,0,
@@ -46,7 +45,7 @@ const uint8_t num_2[64] PROGMEM = {
     0,0,0,0,0,0,0,0
 };
 
-const uint8_t num_3[64] PROGMEM = {
+inline constexpr uint8_t  num_3[64] = {
     0,0,0,0,0,0,0,0,
     0,0,0,1,1,0,0,0,
     0,0,1,0,0,1,0,0,
@@ -57,7 +56,7 @@ const uint8_t num_3[64] PROGMEM = {
     0,0,0,0,0,0,0,0
 };
 
-const uint8_t num_4[64] PROGMEM = {
+inline constexpr uint8_t  num_4[64] = {
     0,0,0,0,0,0,0,0,
     0,0,0,0,0,1,0,0,
     0,0,0,0,1,1,0,0,
@@ -68,7 +67,7 @@ const uint8_t num_4[64] PROGMEM = {
     0,0,0,0,0,0,0,0
 };
 
-const uint8_t num_5[64] PROGMEM = {
+inline constexpr uint8_t  num_5[64] = {
     0,0,0,0,0,0,0,0,
     0,0,1,1,1,1,0,0,
     0,0,1,0,0,0,0,0,
@@ -79,7 +78,7 @@ const uint8_t num_5[64] PROGMEM = {
     0,0,0,0,0,0,0,0
 };
 
-const uint8_t num_6[64] PROGMEM = {
+inline constexpr uint8_t  num_6[64] = {
     0,0,0,0,0,0,0,0,
     0,0,0,1,1,0,0,0,
     0,0,1,0,0,0,0,0,
@@ -90,7 +89,7 @@ const uint8_t num_6[64] PROGMEM = {
     0,0,0,0,0,0,0,0
 };
 
-const uint8_t num_7[64] PROGMEM = {
+inline constexpr uint8_t  num_7[64] = {
     0,0,0,0,0,0,0,0,
     0,0,1,1,1,1,0,0,
     0,0,0,0,0,1,0,0,
@@ -101,7 +100,7 @@ const uint8_t num_7[64] PROGMEM = {
     0,0,0,0,0,0,0,0
 };
 
-const uint8_t num_8[64] PROGMEM = {
+inline constexpr uint8_t  num_8[64] = {
     0,0,0,0,0,0,0,0,
     0,0,0,1,1,0,0,0,
     0,0,1,0,0,1,0,0,
@@ -112,7 +111,7 @@ const uint8_t num_8[64] PROGMEM = {
     0,0,0,0,0,0,0,0
 };
 
-const uint8_t num_9[64] PROGMEM = {
+inline constexpr uint8_t  num_9[64] = {
     0,0,0,0,0,0,0,0,
     0,0,0,1,1,0,0,0,
     0,0,1,0,0,1,0,0,
@@ -123,7 +122,7 @@ const uint8_t num_9[64] PROGMEM = {
     0,0,0,0,0,0,0,0
 };
 
-const uint8_t num_10[64] PROGMEM = {
+inline constexpr uint8_t  num_10[64] = {
     0,1,0,0,0,0,0,0,
     1,1,0,0,0,0,0,0,
     0,1,0,0,0,1,1,0,
@@ -134,7 +133,7 @@ const uint8_t num_10[64] PROGMEM = {
     0,0,0,0,0,1,1,0
 };
 
-const uint8_t num_11[64] PROGMEM = {
+inline constexpr uint8_t  num_11[64] = {
     0,1,0,0,0,0,0,0,
     1,1,0,0,0,0,0,0,
     0,1,0,0,0,0,1,0,
@@ -145,7 +144,7 @@ const uint8_t num_11[64] PROGMEM = {
     0,0,0,0,0,1,1,1
 };
 
-const uint8_t num_12[64] PROGMEM = {
+inline constexpr uint8_t  num_12[64] = {
     0,1,0,0,0,0,0,0,
     1,1,0,0,0,0,0,0,
     0,1,0,0,0,1,1,0,
@@ -156,7 +155,7 @@ const uint8_t num_12[64] PROGMEM = {
     0,0,0,0,1,1,1,1
 };
 
-const uint8_t num_13[64] PROGMEM = {
+inline constexpr uint8_t  num_13[64] = {
     0,1,0,0,0,0,0,0,
     1,1,0,0,0,0,0,0,
     0,1,0,0,0,1,1,0,
@@ -167,7 +166,7 @@ const uint8_t num_13[64] PROGMEM = {
     0,0,0,0,0,1,1,0
 };
 
-const uint8_t num_14[64] PROGMEM = {
+inline constexpr uint8_t  num_14[64] = {
     0,1,0,0,0,0,0,0,
     1,1,0,0,0,0,0,0,
     0,1,0,0,0,0,0,1,
@@ -178,7 +177,7 @@ const uint8_t num_14[64] PROGMEM = {
     0,0,0,0,0,0,0,1
 };
 
-const uint8_t num_15[64] PROGMEM = {
+inline constexpr uint8_t  num_15[64] = {
     0,1,0,0,0,0,0,0,
     1,1,0,0,0,0,0,0,
     0,1,0,0,1,1,1,1,
@@ -189,7 +188,7 @@ const uint8_t num_15[64] PROGMEM = {
     0,0,0,0,1,1,1,0
 };
 
-const uint8_t num_16[64] PROGMEM = {
+inline constexpr uint8_t  num_16[64] = {
     0,1,0,0,0,0,0,0,
     1,1,0,0,0,0,0,0,
     0,1,0,0,0,1,1,0,
@@ -200,7 +199,7 @@ const uint8_t num_16[64] PROGMEM = {
     0,0,0,0,0,1,1,0
 };
 
-const uint8_t num_17[64] PROGMEM = {
+inline constexpr uint8_t  num_17[64] = {
     0,1,0,0,0,0,0,0,
     1,1,0,0,0,0,0,0,
     0,1,0,0,1,1,1,1,
@@ -211,7 +210,7 @@ const uint8_t num_17[64] PROGMEM = {
     0,0,0,0,0,1,0,0
 };
 
-const uint8_t num_18[64] PROGMEM = {
+inline constexpr uint8_t  num_18[64] = {
     0,1,0,0,0,0,0,0,
     1,1,0,0,0,0,0,0,
     0,1,0,0,0,1,1,0,
@@ -222,7 +221,7 @@ const uint8_t num_18[64] PROGMEM = {
     0,0,0,0,0,1,1,0
 };
 
-const uint8_t num_19[64] PROGMEM = {
+inline constexpr uint8_t  num_19[64] = {
     0,1,0,0,0,0,0,0,
     1,1,0,0,0,0,0,0,
     0,1,0,0,0,1,1,0,
@@ -233,7 +232,7 @@ const uint8_t num_19[64] PROGMEM = {
     0,0,0,0,0,1,1,0
 };
 
-const uint8_t num_20[64] PROGMEM = {
+inline constexpr uint8_t  num_20[64] = {
     0,1,1,0,0,0,0,0,
     1,0,0,1,0,0,0,0,
     0,0,1,0,0,1,1,0,
@@ -244,7 +243,7 @@ const uint8_t num_20[64] PROGMEM = {
     0,0,0,0,0,1,1,0
 };
 
-const uint8_t num_21[64] PROGMEM = {
+inline constexpr uint8_t  num_21[64] = {
     0,1,1,0,0,0,0,0,
     1,0,0,1,0,0,0,0,
     0,0,1,0,0,0,1,0,
@@ -255,7 +254,7 @@ const uint8_t num_21[64] PROGMEM = {
     0,0,0,0,0,1,1,1
 };
 
-const uint8_t num_22[64] PROGMEM = {
+inline constexpr uint8_t  num_22[64] = {
     0,1,1,0,0,0,0,0,
     1,0,0,1,0,0,0,0,
     0,0,1,0,0,1,1,0,
@@ -266,7 +265,7 @@ const uint8_t num_22[64] PROGMEM = {
     0,0,0,0,1,1,1,1
 };
 
-const uint8_t num_23[64] PROGMEM = {
+inline constexpr uint8_t  num_23[64] = {
     0,1,1,0,0,0,0,0,
     1,0,0,1,0,0,0,0,
     0,0,1,0,0,1,1,0,
@@ -277,7 +276,7 @@ const uint8_t num_23[64] PROGMEM = {
     0,0,0,0,0,1,1,0
 };
 
-const uint8_t num_24[64] PROGMEM = {
+inline constexpr uint8_t  num_24[64] = {
     0,1,1,0,0,0,0,0,
     1,0,0,1,0,0,0,0,
     0,0,1,0,0,0,0,1,
@@ -288,7 +287,7 @@ const uint8_t num_24[64] PROGMEM = {
     0,0,0,0,0,0,0,1
 };
 
-const uint8_t num_25[64] PROGMEM = {
+inline constexpr uint8_t  num_25[64] = {
     0,1,1,0,0,0,0,0,
     1,0,0,1,0,0,0,0,
     0,0,1,0,1,1,1,1,
@@ -299,7 +298,7 @@ const uint8_t num_25[64] PROGMEM = {
     0,0,0,0,1,1,1,0
 };
 
-const uint8_t num_26[64] PROGMEM = {
+inline constexpr uint8_t  num_26[64] = {
     0,1,1,0,0,0,0,0,
     1,0,0,1,0,0,0,0,
     0,0,1,0,0,1,1,0,
@@ -310,7 +309,7 @@ const uint8_t num_26[64] PROGMEM = {
     0,0,0,0,0,1,1,0
 };
 
-const uint8_t num_27[64] PROGMEM = {
+inline constexpr uint8_t  num_27[64] = {
     0,1,1,0,0,0,0,0,
     1,0,0,1,0,0,0,0,
     0,0,1,0,1,1,1,1,
@@ -321,7 +320,7 @@ const uint8_t num_27[64] PROGMEM = {
     0,0,0,0,0,1,0,0
 };
 
-const uint8_t num_28[64] PROGMEM = {
+inline constexpr uint8_t  num_28[64] = {
     0,1,1,0,0,0,0,0,
     1,0,0,1,0,0,0,0,
     0,0,1,0,0,1,1,0,
@@ -332,7 +331,7 @@ const uint8_t num_28[64] PROGMEM = {
     0,0,0,0,0,1,1,0
 };
 
-const uint8_t num_29[64] PROGMEM = {
+inline constexpr uint8_t  num_29[64] = {
     0,1,1,0,0,0,0,0,
     1,0,0,1,0,0,0,0,
     0,0,1,0,0,1,1,0,
@@ -343,7 +342,7 @@ const uint8_t num_29[64] PROGMEM = {
     0,0,0,0,0,1,1,0
 };
 
-const uint8_t num_30[64] PROGMEM = {
+inline constexpr uint8_t  num_30[64] = {
     0,1,1,0,0,0,0,0,
     1,0,0,1,0,0,0,0,
     0,0,1,0,0,1,1,0,
@@ -354,7 +353,7 @@ const uint8_t num_30[64] PROGMEM = {
     0,0,0,0,0,1,1,0
 };
 
-const uint8_t blank[64] PROGMEM = {
+inline constexpr uint8_t  blank[64] = {
     0,0,0,0,0,0,0,0,
     0,0,0,0,0,0,0,0,
     0,0,0,0,0,0,0,0,
@@ -365,7 +364,7 @@ const uint8_t blank[64] PROGMEM = {
     0,0,0,0,0,0,0,0
 };
 
-const uint8_t cross[64] PROGMEM = {
+inline constexpr uint8_t  cross[64] = {
     1,0,0,0,0,0,0,1,
     0,1,0,0,0,0,1,0,
     0,0,1,0,0,1,0,0,
@@ -376,7 +375,7 @@ const uint8_t cross[64] PROGMEM = {
     1,0,0,0,0,0,0,1
 };
 
-const uint8_t smiley[64] PROGMEM = {
+inline constexpr uint8_t  smiley[64] = {
     0,0,0,0,0,0,0,0,
     0,0,1,0,0,1,0,0,
     0,0,1,0,0,1,0,0,
@@ -387,7 +386,7 @@ const uint8_t smiley[64] PROGMEM = {
     0,0,0,0,0,0,0,0
 };
 
-const uint8_t ok[64] PROGMEM = {
+inline constexpr uint8_t  ok[64] = {
     0,0,0,0,0,0,0,0,
     0,1,0,0,1,0,0,1,
     1,0,1,0,1,0,1,0,
@@ -398,7 +397,7 @@ const uint8_t ok[64] PROGMEM = {
     0,0,0,0,0,0,0,0
 };
 
-const uint8_t exclamation[64] PROGMEM = {
+inline constexpr uint8_t  exclamation[64] = {
     0,0,0,0,0,0,0,0,
     0,0,0,1,0,0,0,0,
     0,0,0,1,0,0,0,0,
@@ -409,7 +408,7 @@ const uint8_t exclamation[64] PROGMEM = {
     0,0,0,0,0,0,0,0
 };
 
-const uint8_t question[64] PROGMEM = {
+inline constexpr uint8_t  question[64] = {
     0,0,0,0,0,0,0,0,
     0,0,0,1,1,0,0,0,
     0,0,0,0,0,1,0,0,
@@ -420,7 +419,7 @@ const uint8_t question[64] PROGMEM = {
     0,0,0,0,0,0,0,0
 };
 
-const uint8_t greater_than[64] PROGMEM = {
+inline constexpr uint8_t  greater_than[64] = {
     0,0,0,0,0,0,0,0,
     0,0,0,1,0,0,0,0,
     0,0,0,0,1,0,0,0,
@@ -431,7 +430,7 @@ const uint8_t greater_than[64] PROGMEM = {
     0,0,0,1,0,0,0,0
 };
 
-const uint8_t thirty_plus[64] PROGMEM = {
+inline constexpr uint8_t  thirty_plus[64] = {
     0,0,0,0,0,0,1,0,
     1,1,0,0,0,1,1,1,
     0,0,1,0,0,0,1,0,
@@ -442,7 +441,7 @@ const uint8_t thirty_plus[64] PROGMEM = {
     0,0,0,0,1,0,0,0
 };
 
-const uint8_t zzz[64] PROGMEM = {
+inline constexpr uint8_t  zzz[64] = {
     0,1,1,1,1,0,0,0,
     0,0,0,1,0,0,0,0,
     0,0,1,0,0,0,0,0,
@@ -453,7 +452,7 @@ const uint8_t zzz[64] PROGMEM = {
     0,0,0,0,1,1,1,1
 };
 
-const uint8_t zzz2[64] PROGMEM = {
+inline constexpr uint8_t  zzz2[64] = {
     0,0,1,1,1,1,0,0,
     0,0,0,0,1,0,0,0,
     0,0,0,1,0,0,0,0,
@@ -464,7 +463,7 @@ const uint8_t zzz2[64] PROGMEM = {
     0,0,0,1,1,1,1,0
 };
 
-const uint8_t r_arrow[64] PROGMEM = {
+inline constexpr uint8_t  r_arrow[64] = {
     0,0,0,0,0,0,0,0,
     0,0,0,1,0,0,0,0,
     0,0,1,1,0,0,0,0,
@@ -475,7 +474,7 @@ const uint8_t r_arrow[64] PROGMEM = {
     0,0,0,1,0,0,0,0
 };
 
-const uint8_t l_arrow[64] PROGMEM = {
+inline constexpr uint8_t  l_arrow[64] = {
     0,0,0,0,0,0,0,0,
     0,0,0,0,1,0,0,0,
     0,0,0,0,1,1,0,0,
@@ -486,7 +485,7 @@ const uint8_t l_arrow[64] PROGMEM = {
     0,0,0,0,1,0,0,0
 };
 
-const uint8_t boot1[64] PROGMEM = {
+inline constexpr uint8_t  boot1[64] = {
     0,0,0,0,0,0,0,0,
     0,0,0,0,0,0,0,0,
     0,0,0,0,0,0,0,0,
@@ -497,7 +496,7 @@ const uint8_t boot1[64] PROGMEM = {
     1,1,1,1,1,1,1,1
 };
 
-const uint8_t boot2[64] PROGMEM = {
+inline constexpr uint8_t  boot2[64] = {
     0,0,0,0,0,0,0,0,
     0,0,0,0,0,0,0,0,
     0,0,0,0,0,0,0,0,
@@ -508,7 +507,7 @@ const uint8_t boot2[64] PROGMEM = {
     0,0,0,0,0,0,0,0
 };
 
-const uint8_t boot3[64] PROGMEM = {
+inline constexpr uint8_t  boot3[64] = {
     0,0,0,0,0,0,0,0,
     0,0,0,0,0,0,0,0,
     0,0,0,0,0,0,0,0,
@@ -519,7 +518,7 @@ const uint8_t boot3[64] PROGMEM = {
     0,0,0,0,0,0,0,0
 };
 
-const uint8_t boot4[64] PROGMEM = {
+inline constexpr uint8_t  boot4[64] = {
     0,0,0,0,0,0,0,0,
     0,0,0,0,0,0,0,0,
     0,0,0,0,0,0,0,0,
@@ -530,7 +529,7 @@ const uint8_t boot4[64] PROGMEM = {
     0,0,0,0,0,0,0,0
 };
 
-const uint8_t boot5[64] PROGMEM = {
+inline constexpr uint8_t  boot5[64] = {
     0,0,0,0,0,0,0,0,
     0,0,0,0,0,0,0,0,
     0,0,0,0,0,0,0,0,
@@ -541,7 +540,7 @@ const uint8_t boot5[64] PROGMEM = {
     0,0,0,0,0,0,0,0
 };
 
-const uint8_t boot6[64] PROGMEM = {
+inline constexpr uint8_t  boot6[64] = {
     0,0,0,0,0,0,0,0,
     0,0,0,0,0,0,0,0,
     1,1,1,1,1,1,1,1,
@@ -552,7 +551,7 @@ const uint8_t boot6[64] PROGMEM = {
     0,0,0,0,0,0,0,0
 };
 
-const uint8_t boot7[64] PROGMEM = {
+inline constexpr uint8_t  boot7[64] = {
     0,0,0,0,0,0,0,0,
     1,1,1,1,1,1,1,1,
     0,0,0,0,0,0,0,0,
@@ -563,7 +562,7 @@ const uint8_t boot7[64] PROGMEM = {
     0,0,0,0,0,0,0,0
 };
 
-const uint8_t boot8[64] PROGMEM = {
+inline constexpr uint8_t  boot8[64] = {
     1,1,1,1,1,1,1,1,
     0,0,0,0,0,0,0,0,
     0,0,0,0,0,0,0,0,
@@ -574,7 +573,7 @@ const uint8_t boot8[64] PROGMEM = {
     0,0,0,0,0,0,0,0
 };
 
-const uint8_t work1[64] PROGMEM = {
+inline constexpr uint8_t  work1[64] = {
     0,0,0,0,0,0,0,0,
     0,0,0,1,1,0,0,0,
     0,0,0,1,1,0,0,0,
@@ -585,7 +584,7 @@ const uint8_t work1[64] PROGMEM = {
     0,0,0,0,0,0,0,0
 };
 
-const uint8_t work2[64] PROGMEM = {
+inline constexpr uint8_t  work2[64] = {
     0,0,0,0,0,0,0,0,
     0,0,0,0,0,0,1,0,
     0,0,0,0,0,1,1,0,
@@ -596,7 +595,7 @@ const uint8_t work2[64] PROGMEM = {
     0,0,0,0,0,0,0,0
 };
 
-const uint8_t work3[64] PROGMEM = {
+inline constexpr uint8_t  work3[64] = {
     0,0,0,0,0,0,0,0,
     0,0,0,0,0,0,0,0,
     0,0,0,0,0,0,0,0,
@@ -607,7 +606,7 @@ const uint8_t work3[64] PROGMEM = {
     0,0,0,0,0,0,0,0
 };
 
-const uint8_t work4[64] PROGMEM = {
+inline constexpr uint8_t  work4[64] = {
     0,0,0,0,0,0,0,0,
     0,1,0,0,0,0,0,0,
     0,1,1,0,0,0,0,0,
@@ -619,13 +618,13 @@ const uint8_t work4[64] PROGMEM = {
 };
 
 // Arrays for easy access
-const uint8_t* const numbers[] = { 
+inline constexpr const uint8_t* numbers[] = { 
     num_0, num_1, num_2, num_3, num_4, num_5, num_6, num_7, num_8, num_9,
     num_10, num_11, num_12, num_13, num_14, num_15, num_16, num_17, num_18, num_19,
     num_20, num_21, num_22, num_23, num_24, num_25, num_26, num_27, num_28, num_29, num_30
 };
 
-const uint8_t* const icons[] = { 
+inline constexpr const uint8_t* icons[] = { 
     heart, blank, cross, smiley, ok, exclamation, question, greater_than, thirty_plus,
     zzz, zzz2, r_arrow, l_arrow,
     boot1, boot2, boot3, boot4, boot5, boot6, boot7, boot8,

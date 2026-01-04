@@ -14,14 +14,16 @@ namespace Utils {
         target[i] = '\0';
     }
 
-    inline void convertTexttoMinutes(char* target, size_t targetSize, const char* source) {
+    inline uint8_t convertTextToMinutes(const char* source) {
+        char buffer[10];
         size_t i;
-        for (i = 0; source[i] != '\0' && i < targetSize - 1; i++) {
+        for (i = 0; source[i] != '\0'; i++) {
             if (source[i] == ' ') break;
-            target[i] = source[i];
-            
+            buffer[i] = source[i];
         }
-        target[i] = '\0';
+        buffer[i] = '\0';
+        long v = strtol(buffer, nullptr, 10);
+        return static_cast<uint8_t>(v);
     }
 }
 

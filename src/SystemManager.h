@@ -28,6 +28,7 @@ class SystemManager {
     unsigned long prevTime;
     uint8_t receiveNum = 0;
     QueuePacket receivedData;
+    bool newData;
 
     // Tasks
     TaskHandle_t systemTaskHandle = nullptr;

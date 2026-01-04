@@ -16,14 +16,15 @@ void SystemManager::init() {
     prevTime = 0;
     systemState = SystemState::BOOT;
     prevSystemState = systemState;
+    newData = false;
     
     // Create tasks
     xTaskCreatePinnedToCore(     // UI Task
       systemTask,                // Function to implement the task
       "systemUiTask",            // Name of the task
-      4096,                      // Stack size in words
+      8192,                      // Stack size in words
       this,                      // Task input parameter
-      1,                         // Priority of the task
+      2,                         // Priority of the task
       &systemTaskHandle,         // Task handle.
       0                          // Core where the task should run
     ); 
@@ -41,14 +42,16 @@ void SystemManager::init() {
 
 void SystemManager::run() {
     buttonMng.updateAll();
+    now = millis();
     if (xQueueReceive(dataQueue, (void *)&receivedData, sizeof(QueuePacket)) == true) {
         // Serial.print("Data received on core: "); Serial.println(xPortGetCoreID());
         setSystemState(receivedData.type);
         if (receivedData.type == EventType::DATA) {
+            newData = true;
             if (receivedData.direction[0].count > 0) {
-                Serial.print("Next departure: "); Serial.print(receivedData.direction[0].departures[0].time); Serial.println(" min");
+                Serial.print("Next departure: "); Serial.print(receivedData.direction[0].departures[0].minutes); Serial.println(" min");
             }
-        }
+        } 
         // Serial.println(" : "); NetworkDebug::debugPrintQueueMessage(receivedData);
     }
     switch (systemState) {
@@ -61,25 +64,30 @@ void SystemManager::run() {
             if (systemState != prevSystemState) {
                 Serial.println("SystemState::NO_WIFI");
             }
-            matrix.clearDisplay();
+            // matrix.clearDisplay();
             break;
         case SystemState::NO_DATA:
             if (systemState != prevSystemState) {
                 Serial.println("SystemState::NO_DATA");
             }
-            matrix.clearDisplay();
+            // matrix.clearDisplay();
             break;
         case SystemState::DATA:
             if (systemState != prevSystemState) {
                 Serial.println("SystemState::DATA");
             }
-            matrix.displayDeparture(receivedData.direction[0].departures[0].time);
+            if (newData) {
+                // matrix.displayDeparture(3);
+                newData = false;
+                matrix.displayDeparture(receivedData.direction[0].departures[0].minutes);
+                prevTime = now;
+            }
             break;
         case SystemState::NO_API_RESPONSE:
             if (systemState != prevSystemState) {
                 Serial.println("SystemState::NO_API_RESPONSE");
             }
-            matrix.clearDisplay();
+            // matrix.clearDisplay();
             break;
         case SystemState::SETUP:
             break;

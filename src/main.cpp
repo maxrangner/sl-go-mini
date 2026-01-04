@@ -12,6 +12,9 @@ void setup() {
   Serial.begin(115200);
   delay(1500);
   Serial.println("BOOT!");
+  Serial.printf("CPU Frequency: %d MHz\n", getCpuFrequencyMhz());
+  Serial.printf("XTAL Frequency: %d MHz\n", getXtalFrequencyMhz());
+  Serial.printf("APB Frequency: %d Hz\n", getApbFrequency());
   SysMng.init();
 }
 

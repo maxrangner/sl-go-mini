@@ -21,7 +21,7 @@ namespace NetworkDebug {
                     sizeof(buffer) - offset,
                     "  [%u] time = %s     dir = %u\n",
                     i,
-                    data.direction[dir].departures[i].time,
+                    data.direction[dir].departures[i].minutes,
                     data.direction[dir].departures[i].directionCode
                 );
             }

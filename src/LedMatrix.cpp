@@ -1,4 +1,16 @@
 #include "LedMatrix.h"
+#include "WiFi.h"
+
+uint8_t testHeart[64] = {
+    0,0,0,0,1,0,0,0,
+    0,0,0,1,0,1,0,0,
+    0,0,1,0,0,0,1,0,
+    0,1,0,0,0,0,0,1,
+    0,1,0,0,1,0,0,1,
+    0,0,1,1,0,1,1,0,
+    0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0
+};
 
 LedMatrix::LedMatrix() : pixels(PIXELS_NUM, LED_PIN) {
 }
@@ -8,19 +20,14 @@ void LedMatrix::init() {
     pixels.begin();
 }
 
-uint32_t LedMatrix::setColors(const uint8_t c[3]) {
-    return pixels.Color(c[0], c[1], c[2]);
-}
-
-void LedMatrix::displayDeparture(char* rawTime) {
+void LedMatrix::displayDeparture(uint8_t timeToDeparture) {
     pixels.clear();
-    uint8_t departureTime = atoi(rawTime);
-    const uint8_t* departure = numbers[departureTime];
-    uint8_t* nextColor = nullptr;
+    const uint8_t* departure = numbers[timeToDeparture];
+    // const uint8_t* departure = num_3;  
+    uint32_t nextColor;
     for (uint8_t i = 0; i < PIXELS_NUM; i++) {
-        if (departure[i] == 1) nextColor = green;
-        else nextColor = off;
-        pixels.setPixelColor(i, setColors(nextColor)); // G, R, B
+        uint8_t pixel = departure[i];
+        if (pixel == 1) pixels.setPixelColor(i, 5, 0, 0);
     }
     pixels.show();
 }

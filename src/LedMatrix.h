@@ -5,14 +5,13 @@
 
 class LedMatrix {
     Adafruit_NeoPixel pixels;
-    uint8_t red[3] = {0, 5, 0};
-    uint8_t green[3] = {5, 0, 0};
-    uint8_t blue[3] = {0, 0, 5};
-    uint8_t off[3] = {0, 0, 0};
-    uint32_t setColors(const uint8_t c[3]);
+    uint32_t red;
+    uint32_t green;
+    uint32_t blue;
+    uint32_t off;
 public:
     LedMatrix();
     void init();
-    void displayDeparture(char* time);
+    void displayDeparture(uint8_t timeToDeparture);
     void clearDisplay();
 };
