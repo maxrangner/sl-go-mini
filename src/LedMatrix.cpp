@@ -10,13 +10,41 @@ void LedMatrix::init() {
     FastLED.show();
 }
 
+void LedMatrix::clear() {
+    FastLED.clear();
+    FastLED.show();
+}
+
+void LedMatrix::displayConnecting(unsigned long frame) {
+    // // Frame rate debug
+    // static unsigned long lastFrame = 0;
+    // unsigned long now = millis();
+    // printf("Frame %lu, delta: %lu ms\n", frame % 4, now - lastFrame);
+    // lastFrame = now;
+
+    const uint8_t* animationFrame = icons[frame % 4 + 21];
+    
+    for (uint8_t i = 0; i < PIXELS_NUM; i++) {
+        if (animationFrame[i] == 1) {
+            leds[i].r = frame % 6 ;
+            leds[i].g = (frame + 2) % 6;
+            leds[i].b = (frame + 4) % 6;
+        } else {
+            leds[i].r = 0;
+            leds[i].g = 0;
+            leds[i].b = 0;
+        }
+    }
+    FastLED.show();
+}
+
 void LedMatrix::displayDeparture(uint8_t timeToDeparture) {
     const uint8_t* departure = numbers[timeToDeparture];
     
     for (uint8_t i = 0; i < PIXELS_NUM; i++) {
         if (departure[i] == 1) {
             leds[i].r = 0;
-            leds[i].g = 5;
+            leds[i].g = 1;
             leds[i].b = 0;
         } else {
             leds[i].r = 0;
@@ -24,7 +52,6 @@ void LedMatrix::displayDeparture(uint8_t timeToDeparture) {
             leds[i].b = 0;
         }
     }
-    
     FastLED.show();
 }
 

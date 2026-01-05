@@ -34,6 +34,7 @@ void NetworkManager::run() {
                 Serial.println(""); Serial.print("Connected with IP: "); Serial.println(WiFi.localIP());
                 networkState = NetworkState::CONNECTED_STA;
                 reconnectionAttempts = 0;
+                return;
             }
             wifiReconnect();
             break;

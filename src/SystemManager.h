@@ -29,6 +29,9 @@ class SystemManager {
     uint8_t receiveNum = 0;
     QueuePacket receivedData;
     bool newData;
+    unsigned long animationFrame;
+    unsigned long lastFrameTime;
+    const unsigned long frameRate = 50; // 50 = 20fps, 33 = 30fps, 20 = 50fps, 17 = 60fps
 
     // Tasks
     TaskHandle_t systemTaskHandle = nullptr;
@@ -39,6 +42,8 @@ class SystemManager {
 
     // Methods
     void setSystemState(EventType event);
+    void checkForNewPackage();
+    void updateAnimationFrame();
 public:
     SystemManager();
     void init();

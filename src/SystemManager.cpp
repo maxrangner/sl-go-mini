@@ -5,18 +5,21 @@ SystemManager::SystemManager() {
 }
 
 void SystemManager::init() {
-    matrix.init();
     mainButton = buttonMng.addButton(BUTTON_PIN, true);
-    dataQueue = xQueueCreate(QUEUE_LEN, sizeof(QueuePacket));
-    if (dataQueue != nullptr) {
-        Serial.println("Queue created!");
-    }
-    networkManager.init(dataQueue);
-    now = millis();
-    prevTime = 0;
     systemState = SystemState::BOOT;
     prevSystemState = systemState;
+    
+    dataQueue = xQueueCreate(QUEUE_LEN, sizeof(QueuePacket));
+    if (dataQueue != nullptr) Serial.println("Queue created!");
+    else Serial.println("Error creating queue.");
+    matrix.init();
+    networkManager.init(dataQueue);
+    
+    now = millis();
+    prevTime = 0;
     newData = false;
+    animationFrame = 0;
+    lastFrameTime = 0;
     
     // Create tasks
     xTaskCreatePinnedToCore(     // UI Task
@@ -41,73 +44,37 @@ void SystemManager::init() {
 }
 
 void SystemManager::run() {
-    /* Stress test
     buttonMng.updateAll();
     now = millis();
-    
-    if (xQueueReceive(dataQueue, (void *)&receivedData, sizeof(QueuePacket)) == true) {
-        setSystemState(receivedData.type);
-        
-        if (receivedData.type == EventType::DATA) {
-            newData = true;
-            
-            // KÖR STRESSTEST EN GÅNG
-            static bool testRun = false;
-            if (!testRun) {
-                testRun = true;
-                Serial.println(">>> Data mottagen - kör stresstest <<<");
-                matrix.stressTest();
-            }
-            
-            if (receivedData.direction[0].count > 0) {
-                Serial.print("Next departure: "); 
-                Serial.print(receivedData.direction[0].departures[0].minutes); 
-                Serial.println(" min");
-            }
-        }
-    }
-    */
+    checkForNewPackage();
 
-    buttonMng.updateAll();
-    now = millis();
-    if (xQueueReceive(dataQueue, (void *)&receivedData, sizeof(QueuePacket)) == true) {
-        // Serial.print("Data received on core: "); Serial.println(xPortGetCoreID());
-        setSystemState(receivedData.type);
-        if (receivedData.type == EventType::DATA) {
-            newData = true;
-            if (receivedData.direction[0].count > 0) {
-                Serial.print("Next departure: "); Serial.print(receivedData.direction[0].departures[0].minutes); Serial.println(" min");
-            }
-        } 
-        // Serial.println(" : "); NetworkDebug::debugPrintQueueMessage(receivedData);
-    }
     switch (systemState) {
         case SystemState::BOOT:
             Serial.println("SystemState::BOOT");
             systemState = SystemState::NO_WIFI;
-            // matrix.clearDisplay();
+            matrix.clear();
             break;
         case SystemState::NO_WIFI:
             if (systemState != prevSystemState) {
                 Serial.println("SystemState::NO_WIFI");
             }
-            // matrix.clearDisplay();
+            matrix.displayConnecting(animationFrame);
             break;
         case SystemState::NO_DATA:
             if (systemState != prevSystemState) {
                 Serial.println("SystemState::NO_DATA");
             }
-            // matrix.clearDisplay();
+            matrix.displayConnecting(animationFrame);
             break;
         case SystemState::DATA:
             if (systemState != prevSystemState) {
                 Serial.println("SystemState::DATA");
             }
             if (newData) {
-                // matrix.displayDeparture(3);
                 newData = false;
                 if (receivedData.direction[0].count > 0 && receivedData.direction[0].departures[0].displayTimeType == TimeDisplayType::MINUTES) {
                     matrix.displayDeparture(receivedData.direction[0].departures[0].minutes);
+                    Serial.print("Next departure: "); Serial.print(receivedData.direction[0].departures[0].minutes); Serial.println(" min");
                 }
                 prevTime = now;
             }
@@ -116,7 +83,7 @@ void SystemManager::run() {
             if (systemState != prevSystemState) {
                 Serial.println("SystemState::NO_API_RESPONSE");
             }
-            // matrix.clearDisplay();
+            matrix.clear();
             break;
         case SystemState::SETUP:
             break;
@@ -127,6 +94,7 @@ void SystemManager::run() {
     if (systemState != prevSystemState) {
         prevSystemState = systemState;
     }
+    updateAnimationFrame();
 }
 
 void SystemManager::systemTask(void* pvParameters) {
@@ -168,5 +136,24 @@ void SystemManager::setSystemState(EventType event) {
         case EventType::NO_API_RESPONSE:
             systemState = SystemState::NO_API_RESPONSE;
             break;
+    }
+}
+
+void SystemManager::checkForNewPackage() {
+    if (xQueueReceive(dataQueue, (void *)&receivedData, 0) == pdTRUE) {
+        // Serial.print("Data received on core: "); Serial.println(xPortGetCoreID());
+        setSystemState(receivedData.type);
+        if (receivedData.type == EventType::DATA) {
+            newData = true;
+        } 
+        // Serial.println(" : "); NetworkDebug::debugPrintQueueMessage(receivedData);
+    }
+}
+
+void SystemManager::updateAnimationFrame() {
+    unsigned long now = millis();
+    if (now - lastFrameTime >= frameRate) {
+        animationFrame++;
+        lastFrameTime = now;
     }
 }

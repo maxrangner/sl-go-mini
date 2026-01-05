@@ -10,6 +10,8 @@ class LedMatrix {
 public:
     LedMatrix();
     void init();
+    void clear();
+    void displayConnecting(unsigned long frame);
     void displayDeparture(uint8_t timeToDeparture);
     void stressTest();
 };
