@@ -41,6 +41,7 @@ void SystemManager::init() {
 }
 
 void SystemManager::run() {
+    /* Stress test
     buttonMng.updateAll();
     now = millis();
     
@@ -65,21 +66,21 @@ void SystemManager::run() {
             }
         }
     }
+    */
 
-
-    // buttonMng.updateAll();
-    // now = millis();
-    // if (xQueueReceive(dataQueue, (void *)&receivedData, sizeof(QueuePacket)) == true) {
-    //     // Serial.print("Data received on core: "); Serial.println(xPortGetCoreID());
-    //     setSystemState(receivedData.type);
-    //     if (receivedData.type == EventType::DATA) {
-    //         newData = true;
-    //         if (receivedData.direction[0].count > 0) {
-    //             Serial.print("Next departure: "); Serial.print(receivedData.direction[0].departures[0].minutes); Serial.println(" min");
-    //         }
-    //     } 
-    //     // Serial.println(" : "); NetworkDebug::debugPrintQueueMessage(receivedData);
-    // }
+    buttonMng.updateAll();
+    now = millis();
+    if (xQueueReceive(dataQueue, (void *)&receivedData, sizeof(QueuePacket)) == true) {
+        // Serial.print("Data received on core: "); Serial.println(xPortGetCoreID());
+        setSystemState(receivedData.type);
+        if (receivedData.type == EventType::DATA) {
+            newData = true;
+            if (receivedData.direction[0].count > 0) {
+                Serial.print("Next departure: "); Serial.print(receivedData.direction[0].departures[0].minutes); Serial.println(" min");
+            }
+        } 
+        // Serial.println(" : "); NetworkDebug::debugPrintQueueMessage(receivedData);
+    }
     switch (systemState) {
         case SystemState::BOOT:
             Serial.println("SystemState::BOOT");
@@ -105,7 +106,9 @@ void SystemManager::run() {
             if (newData) {
                 // matrix.displayDeparture(3);
                 newData = false;
-                matrix.displayDeparture(receivedData.direction[0].departures[0].minutes);
+                if (receivedData.direction[0].count > 0 && receivedData.direction[0].departures[0].displayTimeType == TimeDisplayType::MINUTES) {
+                    matrix.displayDeparture(receivedData.direction[0].departures[0].minutes);
+                }
                 prevTime = now;
             }
             break;

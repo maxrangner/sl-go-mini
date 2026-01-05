@@ -52,21 +52,27 @@ class NetworkManager {
     NetworkState prevNetworkState;
     const unsigned long reconnectTiming = 10'000;
     const unsigned long apiTiming = 10'000;
-    unsigned long timeReconnecting;
     unsigned long prevApiFetch;
-    bool hasNewData;
+    unsigned long prevReconnectAttempt;
     uint8_t reconnectionAttempts;
-    String apiId = "v1/sites/9143/departures?&forecast=360";
-    String apiCombinedURL = API_URL + apiId;
+    String apiSuffix1 = "v1/sites/";
+    String apiStation = "9143";
+    String apiSuffix2 = "/departures?&forecast=360";
+    String apiCombinedURL = API_URL + apiSuffix1 + apiStation + apiSuffix2;
     QueuePacket latestData;
+    bool hasNewData;
+
+    // Methods
     void debugPrint();
+    void onStateChange(EventType event);
     void wifiInit();
-    void wifiWaitingForConnection();
+    void wifiReconnect();
     void fetchApi();
     void parseJson(JsonDocument doc);
     void updateFields(Direction& directionObject, JsonVariant source);
     bool sendToQueue();
     void eventUpdate(EventType event);
+    void resetDirectionsCounts();
 public:
     NetworkManager();
     void init(QueueHandle_t queue);

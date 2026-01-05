@@ -1,31 +1,18 @@
 #include "LedMatrix.h"
 
 LedMatrix::LedMatrix() {
-    // Tom
 }
 
 void LedMatrix::init() {
     Serial.println("LedMatrix init() - FastLED mode");
     FastLED.addLeds<WS2812B, LED_PIN, RGB>(leds, PIXELS_NUM);
-    FastLED.setBrightness(255);  // Full brightness för test
     FastLED.clear();
-    FastLED.show();
-}
-
-void LedMatrix::clear() {
-    FastLED.clear();
-}
-
-void LedMatrix::show() {
     FastLED.show();
 }
 
 void LedMatrix::displayDeparture(uint8_t timeToDeparture) {
-    if (timeToDeparture >= 30) timeToDeparture = 29;
-    
     const uint8_t* departure = numbers[timeToDeparture];
     
-    // Sätt pixlar direkt utan clear() först
     for (uint8_t i = 0; i < PIXELS_NUM; i++) {
         if (departure[i] == 1) {
             leds[i].r = 0;

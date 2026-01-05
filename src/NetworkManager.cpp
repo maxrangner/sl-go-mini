@@ -17,64 +17,43 @@ void NetworkManager::init(QueueHandle_t queue) {
     networkState = NetworkState::INIT;
     prevNetworkState = networkState;
     reconnectionAttempts = 0;
-    timeReconnecting = 0;
+    prevReconnectAttempt = 0;
     prevApiFetch = 0;
     hasNewData = false;
 }
 
 void NetworkManager::run() {
-    unsigned long now = millis();
     switch (networkState) {
         case NetworkState::INIT:
             wifiInit();
             break;
 
         case NetworkState::CONNECTING_STA:
-            if (networkState != prevNetworkState) {
-                eventUpdate(EventType::NO_WIFI);
-            }
-
+            onStateChange(EventType::NO_WIFI);
             if (WiFi.status() == WL_CONNECTED) {
                 Serial.println(""); Serial.print("Connected with IP: "); Serial.println(WiFi.localIP());
                 networkState = NetworkState::CONNECTED_STA;
                 reconnectionAttempts = 0;
             }
-
-            if (now - timeReconnecting >= reconnectTiming) {
-                reconnectionAttempts++;
-                if (reconnectionAttempts <= 5) {
-                    Serial.println("reconnect()");
-                    WiFi.reconnect();
-                    timeReconnecting = now;
-                } else {
-                    reconnectionAttempts = 0;
-                    wifiInit();
-                    timeReconnecting = now;
-                }
-            }
+            wifiReconnect();
             break;
 
         case NetworkState::CONNECTED_STA:
-            if (networkState != prevNetworkState) {
-                esp_wifi_set_ps(WIFI_PS_NONE);
-                eventUpdate(EventType::NO_DATA);
-            }
-            if (WiFi.status() != WL_CONNECTED) {
-                networkState = NetworkState::CONNECTING_STA;
-            } else {
-                fetchApi();
-                // Set latestData.type here?
-            }
+            onStateChange(EventType::NO_DATA);
+            if (WiFi.status() != WL_CONNECTED) networkState = NetworkState::CONNECTING_STA;
+            else fetchApi();
             break;
 
         case NetworkState::ERROR:
-            if (networkState != prevNetworkState) {
-                eventUpdate(EventType::NO_API_RESPONSE);
-            }
+            onStateChange(EventType::NO_API_RESPONSE);
             break;
     }
     if (hasNewData) sendToQueue();
     // debugPrint();
+}
+
+void NetworkManager::onStateChange(EventType event) {
+    if (networkState != prevNetworkState) eventUpdate(event);
 }
 
 void NetworkManager::wifiInit() {
@@ -86,7 +65,21 @@ void NetworkManager::wifiInit() {
     esp_wifi_set_ps(WIFI_PS_NONE);
     Serial.print("Connecting to WiFi: "); Serial.print(SSID); 
     networkState = NetworkState::CONNECTING_STA;
-    timeReconnecting = millis();
+    prevReconnectAttempt = millis();
+}
+
+void NetworkManager::wifiReconnect() {
+    unsigned long now = millis();
+    if (now - prevReconnectAttempt >= reconnectTiming) {
+        reconnectionAttempts++;
+        if (reconnectionAttempts % 6 != 0) {
+            Serial.println("reconnect()");
+            WiFi.reconnect();
+            prevReconnectAttempt = now;
+        } else {
+            wifiInit();
+        }
+    }
 }
 
 void NetworkManager::fetchApi() {
@@ -101,13 +94,12 @@ void NetworkManager::fetchApi() {
         int httpResponse = http.GET();
         if (httpResponse > 0) {
             JsonDocument payload;
-            DeserializationError error = deserializeJson(payload, http.getStream());
-            if (!error) {
+            DeserializationError errorGettingJson = deserializeJson(payload, http.getStream());
+            if (!errorGettingJson) {
                 parseJson(payload);
-                latestData.type = EventType::DATA;
-            } else latestData.type = EventType::NO_API_RESPONSE;
-        } else latestData.type = EventType::NO_API_RESPONSE;
-        hasNewData = true;
+                eventUpdate(EventType::DATA);
+            } else eventUpdate(EventType::NO_API_RESPONSE);
+        } else eventUpdate(EventType::NO_API_RESPONSE);
         http.end();
         vTaskDelay(pdMS_TO_TICKS(150));
         prevApiFetch = now;
@@ -116,39 +108,29 @@ void NetworkManager::fetchApi() {
 
 void NetworkManager::parseJson(JsonDocument payload) {
     JsonArray departures = payload["departures"];
-    Direction& direction0 = latestData.direction[0];
-    Direction& direction1 = latestData.direction[1];
-    direction0.count = 0;
-    direction1.count = 0;
+    resetDirectionsCounts();
 
     for (JsonVariant departure : departures) {
-        if (departure["direction_code"] == 1
-            && departure["state"] != "CANCELLED"
-            && departure["line"]["transport_mode"] == "METRO") {
-            updateFields(direction0, departure);
-        }
-        if (departure["direction_code"] == 2
-            && departure["state"] != "CANCELLED"
-            && departure["line"]["transport_mode"] == "METRO") {
-            updateFields(direction1, departure);
+        uint8_t direction = static_cast<uint8_t>(departure["direction_code"]) - 1;
+        if (departure["state"] != "CANCELLED" && departure["line"]["transport_mode"] == "METRO") {
+            updateFields(latestData.direction[direction], departure);
         }
     }
-    // Check if data is empty
 }
 
 void NetworkManager::updateFields(Direction& directionObject, JsonVariant source) {
     uint8_t& index = directionObject.count;
-    if (directionObject.count < NUM_DEPARTURES) {
-        // Departure is in format: "xx min"
-        if (strchr(source["display"], ':') == NULL) {
-            directionObject.departures[index].displayTimeType = TimeDisplayType::MINUTES;
-            directionObject.departures[index].minutes = Utils::convertTextToMinutes(source["display"]);
-        // Departure is in format: "xx:xx"
-        } else {
-            directionObject.departures[index].displayTimeType = TimeDisplayType::CLOCK_TIME;
+    Departure& departure = directionObject.departures[index];
+
+    if (index < NUM_DEPARTURES) {
+        if (strchr(source["display"], ':') == NULL) { // Departure is in format: "xx min"
+            departure.displayTimeType = TimeDisplayType::MINUTES;
+            departure.minutes = Utils::convertTextToMinutes(source["display"]);
+        } else { // Departure is in format: "xx:xx"
+            departure.displayTimeType = TimeDisplayType::CLOCK_TIME;
             Utils::writeCharArray(
-                directionObject.departures[directionObject.count].clock_time,
-                sizeof(directionObject.departures[directionObject.count].clock_time),
+                departure.clock_time,
+                sizeof(departure.clock_time),
                 source["display"]
             );
         }
@@ -173,6 +155,11 @@ void NetworkManager::eventUpdate(EventType event) {
     latestData.type = event;
     hasNewData = true;
     prevNetworkState = networkState;
+}
+
+void NetworkManager::resetDirectionsCounts() {
+    latestData.direction[0].count = 0;
+    latestData.direction[1].count = 0;
 }
 
 // WIFI DEBUG PRINT
@@ -219,7 +206,7 @@ void NetworkManager::debugPrint() {
 
     if (networkState == NetworkState::CONNECTING_STA) {
         Serial.print(" | t=");
-        Serial.print((now - timeReconnecting) / 1000.0, 1);
+        Serial.print((now - prevReconnectAttempt) / 1000.0, 1);
         Serial.print("/20s");
     }
 

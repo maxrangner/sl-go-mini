@@ -11,7 +11,5 @@ public:
     LedMatrix();
     void init();
     void displayDeparture(uint8_t timeToDeparture);
-    void clear();
-    void show();
     void stressTest();
 };
