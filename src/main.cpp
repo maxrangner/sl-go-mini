@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include "config.h"
 #include "SystemManager.h"
+#include "esp_pm.h"
 /* To be included:
 #include "WebServer.h"
 #include "Preferences.h"
@@ -11,10 +12,13 @@ SystemManager SysMng;
 void setup() {
   Serial.begin(115200);
   delay(1500);
+  esp_pm_config_esp32s3_t pm_config = {
+    .max_freq_mhz = 240,
+    .min_freq_mhz = 240,
+    .light_sleep_enable = false
+  };
+  esp_pm_configure(&pm_config);
   Serial.println("BOOT!");
-  Serial.printf("CPU Frequency: %d MHz\n", getCpuFrequencyMhz());
-  Serial.printf("XTAL Frequency: %d MHz\n", getXtalFrequencyMhz());
-  Serial.printf("APB Frequency: %d Hz\n", getApbFrequency());
   SysMng.init();
 }
 

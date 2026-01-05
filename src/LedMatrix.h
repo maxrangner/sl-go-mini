@@ -1,17 +1,17 @@
 #pragma once
-#include <Adafruit_NeoPixel.h>
+#include <FastLED.h>
 #include "config.h"
 #include "graphics.h"
 
+#define LED_PIN 14
+
 class LedMatrix {
-    Adafruit_NeoPixel pixels;
-    uint32_t red;
-    uint32_t green;
-    uint32_t blue;
-    uint32_t off;
+    CRGB leds[PIXELS_NUM];
 public:
     LedMatrix();
     void init();
     void displayDeparture(uint8_t timeToDeparture);
-    void clearDisplay();
+    void clear();
+    void show();
+    void stressTest();
 };

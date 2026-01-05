@@ -43,22 +43,48 @@ void SystemManager::init() {
 void SystemManager::run() {
     buttonMng.updateAll();
     now = millis();
+    
     if (xQueueReceive(dataQueue, (void *)&receivedData, sizeof(QueuePacket)) == true) {
-        // Serial.print("Data received on core: "); Serial.println(xPortGetCoreID());
         setSystemState(receivedData.type);
+        
         if (receivedData.type == EventType::DATA) {
             newData = true;
-            if (receivedData.direction[0].count > 0) {
-                Serial.print("Next departure: "); Serial.print(receivedData.direction[0].departures[0].minutes); Serial.println(" min");
+            
+            // KÖR STRESSTEST EN GÅNG
+            static bool testRun = false;
+            if (!testRun) {
+                testRun = true;
+                Serial.println(">>> Data mottagen - kör stresstest <<<");
+                matrix.stressTest();
             }
-        } 
-        // Serial.println(" : "); NetworkDebug::debugPrintQueueMessage(receivedData);
+            
+            if (receivedData.direction[0].count > 0) {
+                Serial.print("Next departure: "); 
+                Serial.print(receivedData.direction[0].departures[0].minutes); 
+                Serial.println(" min");
+            }
+        }
     }
+
+
+    // buttonMng.updateAll();
+    // now = millis();
+    // if (xQueueReceive(dataQueue, (void *)&receivedData, sizeof(QueuePacket)) == true) {
+    //     // Serial.print("Data received on core: "); Serial.println(xPortGetCoreID());
+    //     setSystemState(receivedData.type);
+    //     if (receivedData.type == EventType::DATA) {
+    //         newData = true;
+    //         if (receivedData.direction[0].count > 0) {
+    //             Serial.print("Next departure: "); Serial.print(receivedData.direction[0].departures[0].minutes); Serial.println(" min");
+    //         }
+    //     } 
+    //     // Serial.println(" : "); NetworkDebug::debugPrintQueueMessage(receivedData);
+    // }
     switch (systemState) {
         case SystemState::BOOT:
             Serial.println("SystemState::BOOT");
             systemState = SystemState::NO_WIFI;
-            matrix.clearDisplay();
+            // matrix.clearDisplay();
             break;
         case SystemState::NO_WIFI:
             if (systemState != prevSystemState) {

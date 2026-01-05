@@ -83,6 +83,7 @@ void NetworkManager::wifiInit() {
     WiFi.disconnect();
     WiFi.mode(WIFI_STA);
     WiFi.begin(SSID, PASSWORD);
+    esp_wifi_set_ps(WIFI_PS_NONE);
     Serial.print("Connecting to WiFi: "); Serial.print(SSID); 
     networkState = NetworkState::CONNECTING_STA;
     timeReconnecting = millis();
