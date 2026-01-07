@@ -2,6 +2,8 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include "config.h"
+#include "apiDataTypes.h"
+#include "queuePackets.h"
 
 enum class NetworkState {
     INIT,
@@ -11,43 +13,9 @@ enum class NetworkState {
     ERROR
 };
 
-enum class TimeDisplayType {
-    MINUTES,
-    CLOCK_TIME
-};
-
-enum class EventType {
-    NO_WIFI,
-    NO_DATA,
-    NO_API_RESPONSE,
-    DATA
-};
-
-struct Departure {
-    TimeDisplayType displayTimeType;
-    uint8_t minutes;
-    char clock_time[10];
-    // char destination[25];
-    // char direction[25];
-    uint8_t directionCode;
-    // uint8_t line;
-    // char state[25];
-    // char transportMode[25];
-    // char expected[25];
-};
-
-struct Direction {
-    Departure departures[NUM_DEPARTURES];
-    uint8_t count = 0;
-};
-
-struct QueuePacket{
-    EventType type;
-    Direction direction[2];
-};
-
 class NetworkManager {
     QueueHandle_t dataQueue = nullptr;
+    QueueHandle_t settingsQueue = nullptr;
     NetworkState networkState;
     NetworkState prevNetworkState;
     const unsigned long reconnectTiming = 10'000;
@@ -60,6 +28,7 @@ class NetworkManager {
     String apiSuffix2 = "/departures?&forecast=360";
     String apiCombinedURL = API_URL + apiSuffix1 + apiStation + apiSuffix2;
     QueuePacket latestData;
+    SettingsPacket settingsData;
     bool hasNewData;
 
     // Methods
@@ -71,10 +40,12 @@ class NetworkManager {
     void parseJson(JsonDocument doc);
     void updateFields(Direction& directionObject, JsonVariant source);
     bool sendToQueue();
+    void waitForSettingsPackage();
     void eventUpdate(EventType event);
     void resetDirectionsCounts();
+    TransportMode parseTransportMode(const char* input);
 public:
     NetworkManager();
-    void init(QueueHandle_t queue);
+    void init(QueueHandle_t _dataQueue, QueueHandle_t _settingsQueue);
     void run();
 };

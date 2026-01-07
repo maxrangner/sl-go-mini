@@ -12,10 +12,11 @@ void debugPrint();
 
 NetworkManager::NetworkManager() {}
 
-void NetworkManager::init(QueueHandle_t queue) {
-    dataQueue = queue;
+void NetworkManager::init(QueueHandle_t _dataQueue, QueueHandle_t _settingsQueue) {
+    dataQueue = _dataQueue;
+    settingsQueue = _settingsQueue;
     networkState = NetworkState::INIT;
-    prevNetworkState = networkState;
+    prevNetworkState = NetworkState::ERROR;
     reconnectionAttempts = 0;
     prevReconnectAttempt = 0;
     prevApiFetch = 0;
@@ -25,6 +26,7 @@ void NetworkManager::init(QueueHandle_t queue) {
 void NetworkManager::run() {
     switch (networkState) {
         case NetworkState::INIT:
+            waitForSettingsPackage();
             wifiInit();
             break;
 
@@ -54,7 +56,10 @@ void NetworkManager::run() {
 }
 
 void NetworkManager::onStateChange(EventType event) {
-    if (networkState != prevNetworkState) eventUpdate(event);
+    if (networkState != prevNetworkState) {
+        Serial.print("NetworkState: "); Serial.println(static_cast<int>(networkState));
+        eventUpdate(event);
+    }
 }
 
 void NetworkManager::wifiInit() {
@@ -62,9 +67,9 @@ void NetworkManager::wifiInit() {
 
     WiFi.disconnect();
     WiFi.mode(WIFI_STA);
-    WiFi.begin(SSID, PASSWORD);
+    WiFi.begin(settingsData.setSsid, settingsData.setPassword);
     esp_wifi_set_ps(WIFI_PS_NONE);
-    Serial.print("Connecting to WiFi: "); Serial.print(SSID); 
+    Serial.print("Connecting to WiFi: "); Serial.println(SSID); 
     networkState = NetworkState::CONNECTING_STA;
     prevReconnectAttempt = millis();
 }
@@ -99,6 +104,7 @@ void NetworkManager::fetchApi() {
             if (!errorGettingJson) {
                 parseJson(payload);
                 eventUpdate(EventType::DATA);
+                // NetworkDebug::debugPrintQueueMessage(latestData);
             } else eventUpdate(EventType::NO_API_RESPONSE);
         } else eventUpdate(EventType::NO_API_RESPONSE);
         http.end();
@@ -135,7 +141,8 @@ void NetworkManager::updateFields(Direction& directionObject, JsonVariant source
                 source["display"]
             );
         }
-        directionObject.departures[index++].directionCode = source["direction_code"];
+        departure.directionCode = source["direction_code"];
+        index++;
     }
 }
 
@@ -144,11 +151,20 @@ bool NetworkManager::sendToQueue() {
     returnStatus = xQueueOverwrite(dataQueue, (void *)&latestData);
     hasNewData = false;
     if (returnStatus == pdTRUE) {
-        // Serial.println("Packet successfully sent to queue.");
+        // Serial.println("Packet successfully sent to dataQueue.");
         return true;
     } else {
-        // Serial.println("Error sending packet to queue.");
+        Serial.println("Error sending packet with dataQueue.");
         return false;
+    }
+}
+
+void NetworkManager::waitForSettingsPackage() {
+    while (1) {
+        if (xQueueReceive(settingsQueue, (void *)&settingsData, pdMS_TO_TICKS(300)) == pdTRUE) {
+            Serial.print("Settings received on core: "); Serial.println(xPortGetCoreID());
+            break;
+        }
     }
 }
 
@@ -212,4 +228,15 @@ void NetworkManager::debugPrint() {
     }
 
     Serial.println();
+}
+
+TransportMode NetworkManager::parseTransportMode(const char* input) {
+    if (strcmp(input, "metro") == 0) return TransportMode::metro;
+    else if (strcmp(input, "tram") == 0) return TransportMode::tram;
+    else if (strcmp(input, "train") == 0) return TransportMode::train;
+    else if (strcmp(input, "bus") == 0) return TransportMode::bus;
+    else if (strcmp(input, "ship") == 0) return TransportMode::ship;
+    else if (strcmp(input, "ferry") == 0) return TransportMode::ferry;
+    else if (strcmp(input, "taxi") == 0) return TransportMode::taxi;
+    return TransportMode::unknown;
 }

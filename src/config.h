@@ -1,5 +1,5 @@
 #pragma once
-#include <Arduino.h>
+#include <stdint.h>
 
 constexpr const uint8_t LED_PIN = 14;
 constexpr const uint8_t PIXELS_NUM = 64;

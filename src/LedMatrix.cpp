@@ -4,7 +4,6 @@ LedMatrix::LedMatrix() {
 }
 
 void LedMatrix::init() {
-    Serial.println("LedMatrix init() - FastLED mode");
     FastLED.addLeds<WS2812B, LED_PIN, RGB>(leds, PIXELS_NUM);
     FastLED.clear();
     FastLED.show();

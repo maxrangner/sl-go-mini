@@ -5,21 +5,36 @@ SystemManager::SystemManager() {
 }
 
 void SystemManager::init() {
+    // Setup
     mainButton = buttonMng.addButton(BUTTON_PIN, true);
     systemState = SystemState::BOOT;
-    prevSystemState = systemState;
+    prevSystemState = SystemState::ERROR;
     
+    // Queues
     dataQueue = xQueueCreate(QUEUE_LEN, sizeof(QueuePacket));
-    if (dataQueue != nullptr) Serial.println("Queue created!");
+    if (dataQueue != nullptr) Serial.println("Data queue created!");
     else Serial.println("Error creating queue.");
+    settingsQueue = xQueueCreate(QUEUE_LEN, sizeof(SettingsPacket));
+    if (settingsQueue != nullptr) Serial.println("Settings queue created!");
+    else Serial.println("Error creating queue.");
+
+    // Modules inits
     matrix.init();
-    networkManager.init(dataQueue);
+    networkManager.init(dataQueue, settingsQueue);
     
+    // Variables
+    settingsSent = false;
     now = millis();
     prevTime = 0;
     newData = false;
     animationFrame = 0;
     lastFrameTime = 0;
+
+    // Settings
+    settingsData.setTransportMode = TransportMode::metro;
+    settingsData.setDirectionCode = 1;
+    strncpy(settingsData.setSsid, "MaxGuest", sizeof(settingsData.setSsid));
+    strncpy(settingsData.setPassword, "yourewelcome", sizeof(settingsData.setPassword));
     
     // Create tasks
     xTaskCreatePinnedToCore(     // UI Task
@@ -45,44 +60,48 @@ void SystemManager::init() {
 
 void SystemManager::run() {
     buttonMng.updateAll();
-    now = millis();
     checkForNewPackage();
 
     switch (systemState) {
         case SystemState::BOOT:
-            Serial.println("SystemState::BOOT");
-            systemState = SystemState::NO_WIFI;
+            if (systemState != prevSystemState) Serial.println("SystemState::BOOT");
+            if (!settingsSent) {
+                if (settingsPackageSent()) {
+                    systemState = SystemState::NO_WIFI;
+                    settingsSent = true;
+                }
+            }
             matrix.clear();
             break;
         case SystemState::NO_WIFI:
-            if (systemState != prevSystemState) {
-                Serial.println("SystemState::NO_WIFI");
-            }
+            if (systemState != prevSystemState) Serial.println("SystemState::NO_WIFI");
             matrix.displayConnecting(animationFrame);
             break;
         case SystemState::NO_DATA:
-            if (systemState != prevSystemState) {
-                Serial.println("SystemState::NO_DATA");
-            }
+            if (systemState != prevSystemState) Serial.println("SystemState::NO_DATA");
             matrix.displayConnecting(animationFrame);
             break;
         case SystemState::DATA:
-            if (systemState != prevSystemState) {
-                Serial.println("SystemState::DATA");
-            }
+            if (systemState != prevSystemState) Serial.println("SystemState::DATA");
             if (newData) {
                 newData = false;
-                if (receivedData.direction[0].count > 0 && receivedData.direction[0].departures[0].displayTimeType == TimeDisplayType::MINUTES) {
-                    matrix.displayDeparture(receivedData.direction[0].departures[0].minutes);
-                    Serial.print("Next departure: "); Serial.print(receivedData.direction[0].departures[0].minutes); Serial.println(" min");
+                uint8_t direction = settingsData.setDirectionCode - 1;
+                if (receivedData.direction[direction].count > 0 && receivedData.direction[direction].departures[0].displayTimeType == TimeDisplayType::MINUTES) {
+                    // Serial.println("TimeDisplayType::MINUTES");
+                    matrix.displayDeparture(receivedData.direction[direction].departures[0].minutes); 
+                    Serial.print("Next departure: "); Serial.print(receivedData.direction[direction].departures[0].minutes); Serial.println(" min");
+
+                } else if (receivedData.direction[direction].count > 0 && receivedData.direction[direction].departures[0].displayTimeType == TimeDisplayType::CLOCK_TIME) {
+                    // Serial.println("TimeDisplayType::CLOCK_TIME");
+                    // matrix.displayDeparture(receivedData.direction[settingsData.setDirectionCode + 1].departures[0].minutes); 
+                    Serial.print("Next departure: "); Serial.println(receivedData.direction[direction].departures[0].clock_time);
+
                 }
-                prevTime = now;
+                prevTime = millis();
             }
             break;
         case SystemState::NO_API_RESPONSE:
-            if (systemState != prevSystemState) {
-                Serial.println("SystemState::NO_API_RESPONSE");
-            }
+            if (systemState != prevSystemState) Serial.println("SystemState::NO_API_RESPONSE");
             matrix.clear();
             break;
         case SystemState::SETUP:
@@ -110,7 +129,7 @@ void SystemManager::systemTask(void* pvParameters) {
 }
 
 void SystemManager::networkTask(void* pvParameters) {
-    vTaskDelay(200);
+    vTaskDelay(pdMS_TO_TICKS(200));
     Serial.print("networkTask running on core ");
     Serial.println(xPortGetCoreID());
 
@@ -141,13 +160,19 @@ void SystemManager::setSystemState(EventType event) {
 
 void SystemManager::checkForNewPackage() {
     if (xQueueReceive(dataQueue, (void *)&receivedData, 0) == pdTRUE) {
-        // Serial.print("Data received on core: "); Serial.println(xPortGetCoreID());
+        Serial.println("Packet received!");
         setSystemState(receivedData.type);
         if (receivedData.type == EventType::DATA) {
             newData = true;
         } 
-        // Serial.println(" : "); NetworkDebug::debugPrintQueueMessage(receivedData);
     }
+}
+
+bool SystemManager::settingsPackageSent() {
+    BaseType_t returnStatus;
+    returnStatus = xQueueOverwrite(settingsQueue, (void *)&settingsData);
+    if (returnStatus == pdTRUE) return true;
+    else return false;
 }
 
 void SystemManager::updateAnimationFrame() {
