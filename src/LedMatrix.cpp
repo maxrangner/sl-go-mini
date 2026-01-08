@@ -1,9 +1,12 @@
 #include "LedMatrix.h"
+#include "graphics.h"
+#include "animations.h"
 
 LedMatrix::LedMatrix() {
 }
 
 void LedMatrix::init() {
+    Serial.println("FastLED init()");
     FastLED.addLeds<WS2812B, LED_PIN, RGB>(leds, PIXELS_NUM);
     FastLED.clear();
     FastLED.show();
@@ -11,29 +14,6 @@ void LedMatrix::init() {
 
 void LedMatrix::clear() {
     FastLED.clear();
-    FastLED.show();
-}
-
-void LedMatrix::displayConnecting(unsigned long frame) {
-    // // Frame rate debug
-    // static unsigned long lastFrame = 0;
-    // unsigned long now = millis();
-    // printf("Frame %lu, delta: %lu ms\n", frame % 4, now - lastFrame);
-    // lastFrame = now;
-
-    const uint8_t* animationFrame = icons[frame % 4 + 21];
-    
-    for (uint8_t i = 0; i < PIXELS_NUM; i++) {
-        if (animationFrame[i] == 1) {
-            leds[i].r = frame % 6 ;
-            leds[i].g = (frame + 2) % 6;
-            leds[i].b = (frame + 4) % 6;
-        } else {
-            leds[i].r = 0;
-            leds[i].g = 0;
-            leds[i].b = 0;
-        }
-    }
     FastLED.show();
 }
 
@@ -53,6 +33,90 @@ void LedMatrix::displayDeparture(uint8_t timeToDeparture) {
     }
     FastLED.show();
 }
+
+void LedMatrix::displayIcon(uint8_t index) {
+    const uint8_t* departure = icons[index];
+    
+    for (uint8_t i = 0; i < PIXELS_NUM; i++) {
+        if (departure[i] == 1) {
+            leds[i].r = 0;
+            leds[i].g = 1;
+            leds[i].b = 0;
+        } else {
+            leds[i].r = 0;
+            leds[i].g = 0;
+            leds[i].b = 0;
+        }
+    }
+    FastLED.show();
+}
+
+void LedMatrix::bootAnimation(unsigned long frame) {
+    const uint8_t* animationFrame = animations[frame % 8 + 2];
+    
+    for (uint8_t i = 0; i < PIXELS_NUM; i++) {
+        if (animationFrame[i] == 1) {
+            leds[i].r = frame % 6 ;
+            leds[i].g = (frame + 2) % 6;
+            leds[i].b = (frame + 4) % 6;
+        } else {
+            leds[i].r = 0;
+            leds[i].g = 0;
+            leds[i].b = 0;
+        }
+    }
+    FastLED.show();
+}
+
+void LedMatrix::connectionAnimation(unsigned long frame) {
+    uint8_t holdFrame = 1;
+    uint8_t numFrames = 4;
+    const uint8_t* animationFrame = animations[((frame / holdFrame) % numFrames) + 10]; // + 10 is position of animation in array
+    
+    for (uint8_t i = 0; i < PIXELS_NUM; i++) {
+        if (animationFrame[i] == 1) {
+            leds[i].r = frame % 6 ;
+            leds[i].g = (frame + 2) % 6;
+            leds[i].b = (frame + 4) % 6;
+        } else {
+            leds[i].r = 0;
+            leds[i].g = 0;
+            leds[i].b = 0;
+        }
+    }
+    FastLED.show();
+}
+
+void LedMatrix::sleepAnimation(unsigned long frame) {
+    uint8_t holdFrame = 20;
+    uint8_t numFrames = 2;
+    const uint8_t* animationFrame = animations[(frame / holdFrame) % numFrames];
+    
+    for (uint8_t i = 0; i < PIXELS_NUM; i++) {
+        if (animationFrame[i] == 1) {
+            leds[i].r = 1;
+            leds[i].g = 1;
+            leds[i].b = 1;
+        } else {
+            leds[i].r = 0;
+            leds[i].g = 0;
+            leds[i].b = 0;
+        }
+    }
+    FastLED.show();
+}
+
+// Scrolling graphics
+// logicalX = x + scrollOffset
+// pos = logicalX / (DIGIT_WIDTH + SPACING)
+// digitX = logicalX % (DIGIT_WIDTH + SPACING)
+// if (digitX >= DIGIT_WIDTH) → pixel off
+// digitValue = digits[pos]   // t.ex 2, 2, 4, 7
+// numbers[digitIndex][row * 8 + digitX]
+
+// srcCol = (col + offset) % WIDTH;
+// srcIndex = row * WIDTH + srcCol;
+
 
 void LedMatrix::stressTest() {
     Serial.println("\n=== LED STRESSTEST START (FastLED) ===");

@@ -231,12 +231,12 @@ void NetworkManager::debugPrint() {
 }
 
 TransportMode NetworkManager::parseTransportMode(const char* input) {
-    if (strcmp(input, "metro") == 0) return TransportMode::metro;
-    else if (strcmp(input, "tram") == 0) return TransportMode::tram;
-    else if (strcmp(input, "train") == 0) return TransportMode::train;
-    else if (strcmp(input, "bus") == 0) return TransportMode::bus;
-    else if (strcmp(input, "ship") == 0) return TransportMode::ship;
-    else if (strcmp(input, "ferry") == 0) return TransportMode::ferry;
-    else if (strcmp(input, "taxi") == 0) return TransportMode::taxi;
-    return TransportMode::unknown;
+    if (strcmp(input, "METRO") == 0) return TransportMode::METRO;
+    else if (strcmp(input, "TRAM") == 0) return TransportMode::TRAM;
+    else if (strcmp(input, "TRAIN") == 0) return TransportMode::TRAIN;
+    else if (strcmp(input, "BUS") == 0) return TransportMode::BUS;
+    else if (strcmp(input, "SHIP") == 0) return TransportMode::SHIP;
+    else if (strcmp(input, "FERRY") == 0) return TransportMode::FERRY;
+    else if (strcmp(input, "TAXI") == 0) return TransportMode::TAXI;
+    return TransportMode::UNKNOWN;
 }

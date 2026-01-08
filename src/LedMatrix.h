@@ -1,7 +1,6 @@
 #pragma once
 #include <FastLED.h>
 #include "config.h"
-#include "graphics.h"
 
 #define LED_PIN 14
 
@@ -11,7 +10,10 @@ public:
     LedMatrix();
     void init();
     void clear();
-    void displayConnecting(unsigned long frame);
     void displayDeparture(uint8_t timeToDeparture);
+    void displayIcon(uint8_t index);
+    void bootAnimation(unsigned long frame);
+    void connectionAnimation(unsigned long frame);
+    void sleepAnimation(unsigned long frame);
     void stressTest();
 };

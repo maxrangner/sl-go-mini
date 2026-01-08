@@ -35,6 +35,8 @@ class SystemManager {
     unsigned long animationFrame;
     unsigned long lastFrameTime;
     const unsigned long frameRate = 50; // 50 = 20fps, 33 = 30fps, 20 = 50fps, 17 = 60fps
+    bool bootFinished;
+    bool bootSettingsSent;
     
     // Tasks
     TaskHandle_t systemTaskHandle = nullptr;
@@ -50,7 +52,8 @@ class SystemManager {
     void setSystemState(EventType event);
     void checkForNewPackage();
     void updateAnimationFrame();
-    bool settingsPackageSent();
+    void sendSettingsPackage();
+    bool onStateChange();
 public:
     SystemManager();
     void init();

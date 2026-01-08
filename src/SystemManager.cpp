@@ -29,9 +29,11 @@ void SystemManager::init() {
     newData = false;
     animationFrame = 0;
     lastFrameTime = 0;
+    bootFinished = false;
+    bootSettingsSent = false;
 
     // Settings
-    settingsData.setTransportMode = TransportMode::metro;
+    settingsData.setTransportMode = TransportMode::METRO;
     settingsData.setDirectionCode = 1;
     strncpy(settingsData.setSsid, "MaxGuest", sizeof(settingsData.setSsid));
     strncpy(settingsData.setPassword, "yourewelcome", sizeof(settingsData.setPassword));
@@ -60,48 +62,50 @@ void SystemManager::init() {
 
 void SystemManager::run() {
     buttonMng.updateAll();
-    checkForNewPackage();
+    if (bootFinished) checkForNewPackage();
 
     switch (systemState) {
         case SystemState::BOOT:
-            if (systemState != prevSystemState) Serial.println("SystemState::BOOT");
-            if (!settingsSent) {
-                if (settingsPackageSent()) {
-                    systemState = SystemState::NO_WIFI;
-                    settingsSent = true;
-                }
+            if (onStateChange()) {
+                Serial.println("SystemState::BOOT");
+                sendSettingsPackage();
+                matrix.displayIcon(0);
             }
-            matrix.clear();
+            if (animationFrame > 100) {
+                    Serial.println("*** Boot complete ***");
+                    bootFinished = true;
+            }
             break;
         case SystemState::NO_WIFI:
-            if (systemState != prevSystemState) Serial.println("SystemState::NO_WIFI");
-            matrix.displayConnecting(animationFrame);
+            if (onStateChange()) Serial.println("SystemState::NO_WIFI");
+            matrix.connectionAnimation(animationFrame);
             break;
         case SystemState::NO_DATA:
-            if (systemState != prevSystemState) Serial.println("SystemState::NO_DATA");
-            matrix.displayConnecting(animationFrame);
+            if (onStateChange()) Serial.println("SystemState::NO_DATA");
+            matrix.connectionAnimation(animationFrame);
             break;
         case SystemState::DATA:
-            if (systemState != prevSystemState) Serial.println("SystemState::DATA");
+            // Bygg bort event drivet och ersätt med polling.
+            if (onStateChange()) Serial.println("SystemState::DATA");
             if (newData) {
-                newData = false;
                 uint8_t direction = settingsData.setDirectionCode - 1;
+
                 if (receivedData.direction[direction].count > 0 && receivedData.direction[direction].departures[0].displayTimeType == TimeDisplayType::MINUTES) {
                     // Serial.println("TimeDisplayType::MINUTES");
                     matrix.displayDeparture(receivedData.direction[direction].departures[0].minutes); 
                     Serial.print("Next departure: "); Serial.print(receivedData.direction[direction].departures[0].minutes); Serial.println(" min");
-
                 } else if (receivedData.direction[direction].count > 0 && receivedData.direction[direction].departures[0].displayTimeType == TimeDisplayType::CLOCK_TIME) {
                     // Serial.println("TimeDisplayType::CLOCK_TIME");
-                    // matrix.displayDeparture(receivedData.direction[settingsData.setDirectionCode + 1].departures[0].minutes); 
+                    matrix.displayDeparture(receivedData.direction[settingsData.setDirectionCode + 1].departures[0].minutes); 
+                    matrix.sleepAnimation(animationFrame);
                     Serial.print("Next departure: "); Serial.println(receivedData.direction[direction].departures[0].clock_time);
-
                 }
+                newData = false;
                 prevTime = millis();
             }
             break;
         case SystemState::NO_API_RESPONSE:
-            if (systemState != prevSystemState) Serial.println("SystemState::NO_API_RESPONSE");
+            if (onStateChange()) Serial.println("SystemState::NO_API_RESPONSE");
             matrix.clear();
             break;
         case SystemState::SETUP:
@@ -158,6 +162,14 @@ void SystemManager::setSystemState(EventType event) {
     }
 }
 
+bool SystemManager::onStateChange() {
+    if (systemState != prevSystemState) {
+        Serial.print("SystemState: "); Serial.println(static_cast<int>(systemState));
+        return true;
+    }
+    return false;
+}
+
 void SystemManager::checkForNewPackage() {
     if (xQueueReceive(dataQueue, (void *)&receivedData, 0) == pdTRUE) {
         Serial.println("Packet received!");
@@ -168,11 +180,9 @@ void SystemManager::checkForNewPackage() {
     }
 }
 
-bool SystemManager::settingsPackageSent() {
+void SystemManager::sendSettingsPackage() {
     BaseType_t returnStatus;
-    returnStatus = xQueueOverwrite(settingsQueue, (void *)&settingsData);
-    if (returnStatus == pdTRUE) return true;
-    else return false;
+    xQueueOverwrite(settingsQueue, (void *)&settingsData);
 }
 
 void SystemManager::updateAnimationFrame() {
@@ -180,5 +190,6 @@ void SystemManager::updateAnimationFrame() {
     if (now - lastFrameTime >= frameRate) {
         animationFrame++;
         lastFrameTime = now;
+        // Serial.println(animationFrame);
     }
 }

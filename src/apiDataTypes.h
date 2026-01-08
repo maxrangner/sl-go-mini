@@ -6,12 +6,12 @@ enum class TimeDisplayType {
 };
 
 enum class TransportMode {
-    metro,
-    tram,
-    train,
-    bus,
-    ship,
-    ferry,
-    taxi,
-    unknown
+    METRO,
+    TRAM,
+    TRAIN,
+    BUS,
+    SHIP,
+    FERRY,
+    TAXI,
+    UNKNOWN
 };
