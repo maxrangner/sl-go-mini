@@ -37,7 +37,8 @@ class SystemManager {
     const unsigned long frameRate = 50; // 50 = 20fps, 33 = 30fps, 20 = 50fps, 17 = 60fps
     bool bootFinished;
     bool bootSettingsSent;
-    
+    bool settingsPacketSent;
+
     // Tasks
     TaskHandle_t systemTaskHandle = nullptr;
     TaskHandle_t networkTaskHandle = nullptr;
@@ -49,15 +50,17 @@ class SystemManager {
     SettingsPacket settingsData;
 
     // Methods
-    void setSystemState(EventType event);
+    bool setSystemState(EventType event);
     void checkForNewPackage();
     void updateAnimationFrame();
     void sendSettingsPackage();
-    bool onStateChange();
+    void printSystemState();
+    void showDeparture();
+    static void systemTask(void* pvParameters);
+    static void networkTask(void* pvParameters);
+    void printPackage();
 public:
     SystemManager();
     void init();
     void run();
-    static void systemTask(void* pvParameters);
-    static void networkTask(void* pvParameters);
 };

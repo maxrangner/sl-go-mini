@@ -10,6 +10,8 @@ public:
     LedMatrix();
     void init();
     void clear();
+    void setColor();
+    void animateColor();
     void displayDeparture(uint8_t timeToDeparture);
     void displayIcon(uint8_t index);
     void bootAnimation(unsigned long frame);

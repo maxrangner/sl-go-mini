@@ -31,6 +31,7 @@ void SystemManager::init() {
     lastFrameTime = 0;
     bootFinished = false;
     bootSettingsSent = false;
+    settingsPacketSent = false;
 
     // Settings
     settingsData.setTransportMode = TransportMode::METRO;
@@ -66,58 +67,101 @@ void SystemManager::run() {
 
     switch (systemState) {
         case SystemState::BOOT:
-            if (onStateChange()) {
-                Serial.println("SystemState::BOOT");
+            if (!settingsPacketSent) {
+                printSystemState();
                 sendSettingsPackage();
                 matrix.displayIcon(0);
+                settingsPacketSent = true;
             }
-            if (animationFrame > 100) {
-                    Serial.println("*** Boot complete ***");
+            if (!bootFinished && animationFrame > 100) {
                     bootFinished = true;
+                    setSystemState(EventType::NO_WIFI);
             }
             break;
         case SystemState::NO_WIFI:
-            if (onStateChange()) Serial.println("SystemState::NO_WIFI");
+            matrix.setColor();
             matrix.connectionAnimation(animationFrame);
             break;
         case SystemState::NO_DATA:
-            if (onStateChange()) Serial.println("SystemState::NO_DATA");
-            matrix.connectionAnimation(animationFrame);
+            matrix.setColor();
+            matrix.displayIcon(6);
             break;
         case SystemState::DATA:
-            // Bygg bort event drivet och ersätt med polling.
-            if (onStateChange()) Serial.println("SystemState::DATA");
-            if (newData) {
-                uint8_t direction = settingsData.setDirectionCode - 1;
-
-                if (receivedData.direction[direction].count > 0 && receivedData.direction[direction].departures[0].displayTimeType == TimeDisplayType::MINUTES) {
-                    // Serial.println("TimeDisplayType::MINUTES");
-                    matrix.displayDeparture(receivedData.direction[direction].departures[0].minutes); 
-                    Serial.print("Next departure: "); Serial.print(receivedData.direction[direction].departures[0].minutes); Serial.println(" min");
-                } else if (receivedData.direction[direction].count > 0 && receivedData.direction[direction].departures[0].displayTimeType == TimeDisplayType::CLOCK_TIME) {
-                    // Serial.println("TimeDisplayType::CLOCK_TIME");
-                    matrix.displayDeparture(receivedData.direction[settingsData.setDirectionCode + 1].departures[0].minutes); 
-                    matrix.sleepAnimation(animationFrame);
-                    Serial.print("Next departure: "); Serial.println(receivedData.direction[direction].departures[0].clock_time);
-                }
-                newData = false;
-                prevTime = millis();
-            }
+            matrix.setColor();
+            showDeparture();
             break;
         case SystemState::NO_API_RESPONSE:
-            if (onStateChange()) Serial.println("SystemState::NO_API_RESPONSE");
-            matrix.clear();
+            matrix.setColor();
+            matrix.displayIcon(2);
             break;
         case SystemState::SETUP:
             break;
     }
     if (mainButton->wasPushed()) {
-        Serial.print("\nsystemState: "); Serial.println(static_cast<int>(systemState));
-    }
-    if (systemState != prevSystemState) {
-        prevSystemState = systemState;
+        settingsData.setDirectionCode = (settingsData.setDirectionCode == 1) ? 2 : 1;
+        newData = true;
     }
     updateAnimationFrame();
+}
+
+void SystemManager::showDeparture() {
+    uint8_t direction = settingsData.setDirectionCode - 1;
+    Departure departure = receivedData.direction[direction].departures[0];
+    uint8_t numDeparture = receivedData.direction[direction].count;
+
+    if (newData && numDeparture > 0) { // !!! Separate the conditions
+        if (numDeparture > 0 && departure.displayTimeType == TimeDisplayType::MINUTES) {
+            matrix.displayDeparture(departure.minutes); 
+            Serial.print("Next departure: "); Serial.print(receivedData.direction[direction].departures[0].minutes); Serial.println(" min");
+        } else if (numDeparture > 0 && departure.displayTimeType == TimeDisplayType::CLOCK_TIME) {
+            matrix.sleepAnimation(animationFrame);
+            Serial.print("Next departure: "); Serial.println(receivedData.direction[direction].departures[0].clock_time);
+        }
+        newData = false;
+    }
+
+
+}
+
+bool SystemManager::setSystemState(EventType event) {
+    SystemState newState = systemState;
+
+    switch (event) {
+        case EventType::NO_WIFI:         newState = SystemState::NO_WIFI; break;
+        case EventType::NO_DATA:         newState = SystemState::NO_DATA; break;
+        case EventType::DATA:            newState = SystemState::DATA; break;
+        case EventType::NO_API_RESPONSE: newState = SystemState::NO_API_RESPONSE; break;
+    }
+
+    if (newState == systemState) return false;
+    systemState = newState;
+    printSystemState();
+    return true;
+}
+
+void SystemManager::checkForNewPackage() {
+    if (xQueueReceive(dataQueue, (void *)&receivedData, 0) == pdTRUE) {
+        Serial.println("Packet received!");
+        setSystemState(receivedData.type);
+        if (receivedData.type == EventType::DATA) {
+            newData = true;
+        } 
+        printPackage();
+    }
+}
+
+void SystemManager::sendSettingsPackage() {
+    BaseType_t returnStatus;
+    xQueueOverwrite(settingsQueue, (void *)&settingsData);
+}
+
+void SystemManager::updateAnimationFrame() {
+    unsigned long now = millis();
+    if (now - lastFrameTime >= frameRate) {
+        animationFrame++;
+        lastFrameTime = now;
+        // Serial.println(animationFrame);
+    }
 }
 
 void SystemManager::systemTask(void* pvParameters) {
@@ -145,51 +189,73 @@ void SystemManager::networkTask(void* pvParameters) {
     } 
 }
 
-void SystemManager::setSystemState(EventType event) {
-    switch (event) {
-        case EventType::NO_WIFI:
-            systemState = SystemState::NO_WIFI;
-            break;
-        case EventType::NO_DATA:
-            systemState = SystemState::NO_DATA;
-            break;
-        case EventType::DATA:
-            systemState = SystemState::DATA;
-            break;
-        case EventType::NO_API_RESPONSE:
-            systemState = SystemState::NO_API_RESPONSE;
-            break;
+void SystemManager::printSystemState() {
+    const char* stateStr = "UNKNOWN";
+    switch (systemState) {
+        case SystemState::BOOT:            stateStr = "BOOT"; break;
+        case SystemState::NO_WIFI:         stateStr = "NO_WIFI"; break;
+        case SystemState::NO_DATA:         stateStr = "NO_DATA"; break;
+        case SystemState::NO_API_RESPONSE: stateStr = "NO_API_RESPONSE"; break;
+        case SystemState::DATA:            stateStr = "DATA"; break;
+        case SystemState::SETUP:           stateStr = "SETUP"; break;
+        case SystemState::ERROR:           stateStr = "ERROR"; break;
     }
+    Serial.print("SystemState: ");
+    Serial.println(stateStr);
 }
 
-bool SystemManager::onStateChange() {
-    if (systemState != prevSystemState) {
-        Serial.print("SystemState: "); Serial.println(static_cast<int>(systemState));
-        return true;
+void SystemManager::printPackage() {
+    char buf[512];
+    size_t len = 0;
+    len += snprintf(buf + len, sizeof(buf) - len,
+                    "\n=== PACKET RECEIVED ===\n");
+    const char* typeStr = "UNKNOWN";
+    switch (receivedData.type) {
+        case EventType::NO_WIFI:         typeStr = "NO_WIFI"; break;
+        case EventType::NO_DATA:         typeStr = "NO_DATA"; break;
+        case EventType::NO_API_RESPONSE: typeStr = "NO_API_RESPONSE"; break;
+        case EventType::DATA:            typeStr = "DATA"; break;
     }
-    return false;
-}
-
-void SystemManager::checkForNewPackage() {
-    if (xQueueReceive(dataQueue, (void *)&receivedData, 0) == pdTRUE) {
-        Serial.println("Packet received!");
-        setSystemState(receivedData.type);
-        if (receivedData.type == EventType::DATA) {
-            newData = true;
-        } 
+    len += snprintf(buf + len, sizeof(buf) - len,
+                    "Type: %s\n\n", typeStr);
+    if (receivedData.type != EventType::DATA) {
+        len += snprintf(buf + len, sizeof(buf) - len,
+                        "=======================\n");
+        Serial.print(buf);
+        return;
     }
-}
-
-void SystemManager::sendSettingsPackage() {
-    BaseType_t returnStatus;
-    xQueueOverwrite(settingsQueue, (void *)&settingsData);
-}
-
-void SystemManager::updateAnimationFrame() {
-    unsigned long now = millis();
-    if (now - lastFrameTime >= frameRate) {
-        animationFrame++;
-        lastFrameTime = now;
-        // Serial.println(animationFrame);
+    for (uint8_t d = 0; d < 2; d++) {
+        Direction& dir = receivedData.direction[d];
+        len += snprintf(buf + len, sizeof(buf) - len,
+                        "Direction %u (count: %u)\n",
+                        d, dir.count);
+        for (uint8_t i = 0; i < dir.count && i < NUM_DEPARTURES; i++) {
+            Departure& dep = dir.departures[i];
+            if (dep.displayTimeType == TimeDisplayType::MINUTES) {
+                len += snprintf(buf + len, sizeof(buf) - len,
+                                "  [%u] %u min\n",
+                                i, dep.minutes);
+            }
+            else if (dep.displayTimeType == TimeDisplayType::CLOCK_TIME) {
+                if (dep.clock_time[0] != '\0') {
+                    len += snprintf(buf + len, sizeof(buf) - len,
+                                    "  [%u] %s\n",
+                                    i, dep.clock_time);
+                } else {
+                    len += snprintf(buf + len, sizeof(buf) - len,
+                                    "  [%u] ?? (empty clock_time)\n",
+                                    i);
+                }
+            }
+            else {
+                len += snprintf(buf + len, sizeof(buf) - len,
+                                "  [%u] ?? (invalid type)\n",
+                                i);
+            }
+        }
+        len += snprintf(buf + len, sizeof(buf) - len, "\n");
     }
+    len += snprintf(buf + len, sizeof(buf) - len,
+                    "=======================\n");
+    Serial.print(buf);
 }

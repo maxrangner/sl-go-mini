@@ -17,6 +17,14 @@ void LedMatrix::clear() {
     FastLED.show();
 }
 
+void LedMatrix::setColor() {
+    // Set color
+}
+
+void LedMatrix::animateColor() {
+    // Animate color
+}
+
 void LedMatrix::displayDeparture(uint8_t timeToDeparture) {
     const uint8_t* departure = numbers[timeToDeparture];
     

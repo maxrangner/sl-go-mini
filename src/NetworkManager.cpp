@@ -51,15 +51,26 @@ void NetworkManager::run() {
             onStateChange(EventType::NO_API_RESPONSE);
             break;
     }
-    if (hasNewData) sendToQueue();
+    // if (hasNewData) sendToQueue(); // VARIABLE NOW UNUSED
     // debugPrint();
 }
 
 void NetworkManager::onStateChange(EventType event) {
-    if (networkState != prevNetworkState) {
-        Serial.print("NetworkState: "); Serial.println(static_cast<int>(networkState));
-        eventUpdate(event);
+    if (networkState == prevNetworkState) {
+        return;
     }
+    const char* stateStr = "UNKNOWN";
+    switch (networkState) {
+        case NetworkState::INIT:            stateStr = "INIT"; break;
+        case NetworkState::CONNECTING_STA:  stateStr = "CONNECTING_STA"; break;
+        case NetworkState::CONNECTED_STA:   stateStr = "CONNECTED_STA"; break;
+        case NetworkState::DISCONNECTED:    stateStr = "DISCONNECTED"; break;
+        case NetworkState::ERROR:           stateStr = "ERROR"; break;
+    }
+    Serial.print("NetworkState: ");
+    Serial.println(stateStr);
+
+    eventUpdate(event);
 }
 
 void NetworkManager::wifiInit() {
@@ -104,6 +115,7 @@ void NetworkManager::fetchApi() {
             if (!errorGettingJson) {
                 parseJson(payload);
                 eventUpdate(EventType::DATA);
+                sendToQueue();
                 // NetworkDebug::debugPrintQueueMessage(latestData);
             } else eventUpdate(EventType::NO_API_RESPONSE);
         } else eventUpdate(EventType::NO_API_RESPONSE);
@@ -177,57 +189,6 @@ void NetworkManager::eventUpdate(EventType event) {
 void NetworkManager::resetDirectionsCounts() {
     latestData.direction[0].count = 0;
     latestData.direction[1].count = 0;
-}
-
-// WIFI DEBUG PRINT
-const char* netStateStr(NetworkState s) {
-    switch (s) {
-        case NetworkState::INIT: return "INIT";
-        case NetworkState::CONNECTING_STA: return "CONNECTING";
-        case NetworkState::CONNECTED_STA: return "CONNECTED";
-        case NetworkState::DISCONNECTED: return "DISCONNECTED";
-        case NetworkState::ERROR: return "ERROR";
-        default: return "UNKNOWN";
-    }
-}
-
-const char* wifiStatusStr(wl_status_t s) {
-    switch (s) {
-        case WL_IDLE_STATUS: return "IDLE";
-        case WL_NO_SSID_AVAIL: return "NO_SSID";
-        case WL_CONNECTED: return "CONNECTED";
-        case WL_CONNECT_FAILED: return "CONNECT_FAILED";
-        case WL_CONNECTION_LOST: return "CONNECTION_LOST";
-        case WL_DISCONNECTED: return "DISCONNECTED";
-        default: return "UNKNOWN";
-    }
-}
-
-void NetworkManager::debugPrint() {
-    unsigned long now = millis();
-
-    Serial.print("[NET] ");
-    Serial.print(netStateStr(networkState));
-
-    if (networkState != prevNetworkState) {
-        Serial.print(" (ENTRY)");
-    } else {
-        Serial.print("        ");
-    }
-
-    Serial.print(" | wifi=");
-    Serial.print(wifiStatusStr(WiFi.status()));
-    Serial.print("(");
-    Serial.print(WiFi.status());
-    Serial.print(")");
-
-    if (networkState == NetworkState::CONNECTING_STA) {
-        Serial.print(" | t=");
-        Serial.print((now - prevReconnectAttempt) / 1000.0, 1);
-        Serial.print("/20s");
-    }
-
-    Serial.println();
 }
 
 TransportMode NetworkManager::parseTransportMode(const char* input) {
