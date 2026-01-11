@@ -7,4 +7,5 @@ constexpr const uint8_t BUTTON_PIN = 0;
 constexpr const uint8_t QUEUE_LEN = 1;
 constexpr const uint8_t QUEUE_ITEM_SIZE = 4;
 constexpr const uint8_t NUM_DEPARTURES = 4;
+constexpr const uint8_t FRAME_RATE = 50; // 50 = 20fps, 33 = 30fps, 20 = 50fps, 17 = 60fps
 constexpr const char* API_URL = "https://transport.integration.sl.se/";

@@ -78,7 +78,7 @@ void NetworkManager::wifiInit() {
 
     WiFi.disconnect();
     WiFi.mode(WIFI_STA);
-    WiFi.begin(settingsData.setSsid, settingsData.setPassword);
+    WiFi.begin(settingsData.settingSsid, settingsData.settingPassword);
     esp_wifi_set_ps(WIFI_PS_NONE);
     Serial.print("Connecting to WiFi: "); Serial.println(SSID); 
     networkState = NetworkState::CONNECTING_STA;

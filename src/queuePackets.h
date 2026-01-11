@@ -3,6 +3,20 @@
 #include "config.h"
 #include "apiDataTypes.h"
 
+enum class EventType {
+    NO_WIFI,
+    NO_DATA,
+    NO_API_RESPONSE,
+    DATA
+};
+
+struct SettingsPacket{
+    TransportMode settingTransportMode;
+    uint8_t settingDirectionCode;
+    char settingSsid[30];
+    char settingPassword[30];
+};
+
 struct Departure {
     TimeDisplayType displayTimeType;
     uint8_t minutes;
@@ -19,20 +33,6 @@ struct Departure {
 struct Direction {
     Departure departures[NUM_DEPARTURES];
     uint8_t count = 0;
-};
-
-enum class EventType {
-    NO_WIFI,
-    NO_DATA,
-    NO_API_RESPONSE,
-    DATA
-};
-
-struct SettingsPacket{
-    TransportMode setTransportMode;
-    uint8_t setDirectionCode;
-    char setSsid[30];
-    char setPassword[30];
 };
 
 struct QueuePacket{

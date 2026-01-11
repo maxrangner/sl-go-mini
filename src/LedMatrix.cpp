@@ -114,66 +114,70 @@ void LedMatrix::sleepAnimation(unsigned long frame) {
     FastLED.show();
 }
 
-// Scrolling graphics
-// logicalX = x + scrollOffset
-// pos = logicalX / (DIGIT_WIDTH + SPACING)
-// digitX = logicalX % (DIGIT_WIDTH + SPACING)
-// if (digitX >= DIGIT_WIDTH) → pixel off
-// digitValue = digits[pos]   // t.ex 2, 2, 4, 7
-// numbers[digitIndex][row * 8 + digitX]
-
-// srcCol = (col + offset) % WIDTH;
-// srcIndex = row * WIDTH + srcCol;
-
-
-void LedMatrix::stressTest() {
-    Serial.println("\n=== LED STRESSTEST START (FastLED) ===");
-    Serial.println("Uppdaterar pixels.show() 1000 gånger...");
-    Serial.println("Loggar ENDAST verkliga timing-spikes (>6ms)");
-    Serial.println("------------------------------------------------");
+void LedMatrix::leftArrowAnimation() {
+    uint8_t holdFrame = 1;
+    uint8_t numFrames = 11;
+    unsigned long startFrame = millis();
+    unsigned long prevFrame = 1;
     
-    const uint32_t SPIKE_THRESHOLD_US = 6000;
-    uint32_t maxShow = 0;
-    uint32_t spikeCount = 0;
-    uint32_t totalCalls = 0;
-    
-    for (int i = 0; i < 1000; i++) {
-        uint32_t start = micros();
-        displayDeparture(1);
-        uint32_t dt = micros() - start;
-        
-        totalCalls++;
-        
-        if (dt > maxShow) {
-            maxShow = dt;
+    for (unsigned long frame = 0; frame < numFrames - 1;) {
+        frame = ((millis() - startFrame) / (holdFrame * FRAME_RATE));
+        if (frame != prevFrame) {
+            FastLED.clear();
+            for (uint8_t i = 0; i < PIXELS_NUM; i++) {
+                const uint8_t* animationFrame = animations[frame + 14]; // + 14 is position of animation in array
+                if (animationFrame[i] == 1) {
+                    leds[i].r = 1;
+                    leds[i].g = 1;
+                    leds[i].b = 1;
+                }
+            }
+            FastLED.show();
         }
-        
-        if (dt > SPIKE_THRESHOLD_US) {
-            spikeCount++;
-            Serial.printf(
-                "[SPIKE] iter=%d | show=%lu µs | heap=%u\n",
-                i,
-                dt,
-                ESP.getFreeHeap()
-            );
-        }
-        
-        if ((i + 1) % 100 == 0) {
-            Serial.printf(
-                "[STATS] %d calls | spikes=%lu | max=%lu µs\n",
-                i + 1,
-                spikeCount,
-                maxShow
-            );
-        }
-        
-        vTaskDelay(pdMS_TO_TICKS(100));
+        prevFrame = frame;
     }
+}
+
+void LedMatrix::scrollGraphics(const uint8_t** graphicSequence, uint8_t numGraphics, unsigned long animationFrame, uint8_t scrollSpeed) {
+    unsigned long scrollOffset = (animationFrame * scrollSpeed) / 10;
+    const int8_t SPACING = -2;  // start with -1, not -3
+    const uint8_t COL_OFFSET = 1;  // skip first column
+    const uint8_t GRAPHIC_WIDTH = 8;
     
-    Serial.println("------------------------------------------------");
-    Serial.println("=== STRESSTEST KLAR ===");
-    Serial.printf("Totalt calls: %lu\n", totalCalls);
-    Serial.printf("Totala spikes (>6ms): %lu\n", spikeCount);
-    Serial.printf("Max show(): %lu µs\n", maxShow);
-    Serial.println("Observera: Visuella glitches ska matcha SPIKE-loggar.");
+    for (uint8_t row = 0; row < 8; row++) {
+        for (uint8_t col = 0; col < 8; col++) {
+            unsigned long logicalCol = col + scrollOffset;
+            uint8_t digitIndex = logicalCol / (GRAPHIC_WIDTH + SPACING);
+            digitIndex = digitIndex % numGraphics;
+            uint8_t digitCol = (logicalCol % (GRAPHIC_WIDTH + SPACING)) + COL_OFFSET;
+            
+            uint8_t pixelValue = graphicSequence[digitIndex][row * GRAPHIC_WIDTH + digitCol];
+            
+            uint8_t ledIndex = row * 8 + col;
+            if (pixelValue == 1) {
+                leds[ledIndex].r = 1;
+                leds[ledIndex].g = 1;
+                leds[ledIndex].b = 1;
+            } else {
+                leds[ledIndex].r = 0;
+                leds[ledIndex].g = 0;
+                leds[ledIndex].b = 0;
+            }
+        }
+    }
+    FastLED.show();
+}
+
+void LedMatrix::displayClocktime(const char* timeStr, unsigned long animationFrame, uint8_t scrollSpeed) {
+    const uint8_t* digitSequence[7];
+    
+    
+    digitSequence[0] = numbers[timeStr[0] - '0'];
+    digitSequence[1] = numbers[timeStr[1] - '0'];
+    digitSequence[2] = icons[1];
+    digitSequence[3] = numbers[timeStr[3] - '0'];
+    digitSequence[4] = numbers[timeStr[4] - '0'];
+    digitSequence[5] = icons[11];
+    digitSequence[6] = icons[11];
+    scrollGraphics(digitSequence, 7, animationFrame, scrollSpeed);
 }

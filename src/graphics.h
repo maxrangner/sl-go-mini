@@ -353,13 +353,13 @@ inline constexpr uint8_t  num_30[64] = {
     0,0,0,0,0,1,1,0
 };
 
-inline constexpr uint8_t  blank[64] = {
+inline constexpr uint8_t  colon[64] = {
     0,0,0,0,0,0,0,0,
+    0,0,0,1,1,0,0,0,
+    0,0,0,1,1,0,0,0,
     0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,
+    0,0,0,1,1,0,0,0,
+    0,0,0,1,1,0,0,0,
     0,0,0,0,0,0,0,0,
     0,0,0,0,0,0,0,0
 };
@@ -463,6 +463,17 @@ inline constexpr uint8_t  l_arrow[64] = {
     0,0,0,0,1,0,0,0
 };
 
+inline constexpr uint8_t  blank[64] = {
+    0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0
+};
+
 inline constexpr const uint8_t* numbers[] = { 
     num_0, num_1, num_2, num_3, num_4, num_5, num_6, num_7, num_8, num_9,
     num_10, num_11, num_12, num_13, num_14, num_15, num_16, num_17, num_18, num_19,
@@ -470,6 +481,6 @@ inline constexpr const uint8_t* numbers[] = {
 };
 
 inline constexpr const uint8_t* icons[] = { 
-    heart, blank, cross, smiley, ok, exclamation, question, greater_than, thirty_plus,
-    r_arrow, l_arrow
+    heart, colon, cross, smiley, ok, exclamation, question, greater_than, thirty_plus,
+    r_arrow, l_arrow, blank
 };

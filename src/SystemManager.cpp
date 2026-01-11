@@ -34,10 +34,10 @@ void SystemManager::init() {
     settingsPacketSent = false;
 
     // Settings
-    settingsData.setTransportMode = TransportMode::METRO;
-    settingsData.setDirectionCode = 1;
-    strncpy(settingsData.setSsid, "MaxGuest", sizeof(settingsData.setSsid));
-    strncpy(settingsData.setPassword, "yourewelcome", sizeof(settingsData.setPassword));
+    settingsData.settingTransportMode = TransportMode::METRO;
+    settingsData.settingDirectionCode = 1;
+    strncpy(settingsData.settingSsid, "MaxGuest", sizeof(settingsData.settingSsid));
+    strncpy(settingsData.settingPassword, "yourewelcome", sizeof(settingsData.settingPassword));
     
     // Create tasks
     xTaskCreatePinnedToCore(     // UI Task
@@ -63,8 +63,13 @@ void SystemManager::init() {
 
 void SystemManager::run() {
     buttonMng.updateAll();
-    if (bootFinished) checkForNewPackage();
+    if (mainButton->wasPushed()) {
+        settingsData.settingDirectionCode = (settingsData.settingDirectionCode == 1) ? 2 : 1;
+        newData = true;
+        matrix.leftArrowAnimation();
+    }
 
+    if (bootFinished) checkForNewPackage();
     switch (systemState) {
         case SystemState::BOOT:
             if (!settingsPacketSent) {
@@ -73,7 +78,7 @@ void SystemManager::run() {
                 matrix.displayIcon(0);
                 settingsPacketSent = true;
             }
-            if (!bootFinished && animationFrame > 100) {
+            if (!bootFinished && animationFrame > 10) {
                     bootFinished = true;
                     setSystemState(EventType::NO_WIFI);
             }
@@ -97,15 +102,11 @@ void SystemManager::run() {
         case SystemState::SETUP:
             break;
     }
-    if (mainButton->wasPushed()) {
-        settingsData.setDirectionCode = (settingsData.setDirectionCode == 1) ? 2 : 1;
-        newData = true;
-    }
     updateAnimationFrame();
 }
 
 void SystemManager::showDeparture() {
-    uint8_t direction = settingsData.setDirectionCode - 1;
+    uint8_t direction = settingsData.settingDirectionCode - 1;
     Departure departure = receivedData.direction[direction].departures[0];
     uint8_t numDeparture = receivedData.direction[direction].count;
 
@@ -114,7 +115,9 @@ void SystemManager::showDeparture() {
             matrix.displayDeparture(departure.minutes); 
             Serial.print("Next departure: "); Serial.print(receivedData.direction[direction].departures[0].minutes); Serial.println(" min");
         } else if (numDeparture > 0 && departure.displayTimeType == TimeDisplayType::CLOCK_TIME) {
-            matrix.sleepAnimation(animationFrame);
+            char timeBuffer[10];
+            strcpy(timeBuffer, receivedData.direction[settingsData.settingDirectionCode - 1].departures[0].clock_time);
+            matrix.displayClocktime(timeBuffer, animationFrame);
             Serial.print("Next departure: "); Serial.println(receivedData.direction[direction].departures[0].clock_time);
         }
         newData = false;
@@ -156,12 +159,7 @@ void SystemManager::sendSettingsPackage() {
 }
 
 void SystemManager::updateAnimationFrame() {
-    unsigned long now = millis();
-    if (now - lastFrameTime >= frameRate) {
-        animationFrame++;
-        lastFrameTime = now;
-        // Serial.println(animationFrame);
-    }
+    animationFrame = (millis() / FRAME_RATE);
 }
 
 void SystemManager::systemTask(void* pvParameters) {
