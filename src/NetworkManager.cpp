@@ -33,7 +33,10 @@ void NetworkManager::run() {
         case NetworkState::CONNECTING_STA:
             onStateChange(EventType::NO_WIFI);
             if (WiFi.status() == WL_CONNECTED) {
-                Serial.println(""); Serial.print("Connected with IP: "); Serial.println(WiFi.localIP());
+                if (logLevel >= LogLevel::DEBUG) {
+                    Serial.print("Connected with IP: ");
+                    Serial.println(WiFi.localIP());
+                }
                 networkState = NetworkState::CONNECTED_STA;
                 reconnectionAttempts = 0;
                 return;
@@ -67,20 +70,20 @@ void NetworkManager::onStateChange(EventType event) {
         case NetworkState::DISCONNECTED:    stateStr = "DISCONNECTED"; break;
         case NetworkState::ERROR:           stateStr = "ERROR"; break;
     }
-    Serial.print("NetworkState: ");
-    Serial.println(stateStr);
+    
+    if (logLevel >= LogLevel::DEBUG) printf("NetworkState: %s, stateStr\n"); 
 
     eventUpdate(event);
 }
 
 void NetworkManager::wifiInit() {
-    Serial.println("wifiInit()");
+    if (logLevel >= LogLevel::DEBUG) printf("wifiInit()");
 
     WiFi.disconnect();
     WiFi.mode(WIFI_STA);
     WiFi.begin(settingsData.settingSsid, settingsData.settingPassword);
-    esp_wifi_set_ps(WIFI_PS_NONE);
-    Serial.print("Connecting to WiFi: "); Serial.println(SSID); 
+    esp_wifi_set_ps(WIFI_PS_MIN_MODEM);
+    if (logLevel >= LogLevel::DEBUG) printf("Connecting to WiFi: %s\n", SSID);
     networkState = NetworkState::CONNECTING_STA;
     prevReconnectAttempt = millis();
 }
@@ -90,7 +93,7 @@ void NetworkManager::wifiReconnect() {
     if (now - prevReconnectAttempt >= reconnectTiming) {
         reconnectionAttempts++;
         if (reconnectionAttempts % 6 != 0) {
-            Serial.println("reconnect()");
+            if (logLevel >= LogLevel::DEBUG) printf("reconnect()");
             WiFi.reconnect();
             prevReconnectAttempt = now;
         } else {
@@ -103,13 +106,13 @@ void NetworkManager::fetchApi() {
     unsigned long now = millis();
     String apiPayload;
     if (now - prevApiFetch >= apiTiming) {
-        Serial.println(""); Serial.println("Fetching Api!");
+        if (logLevel >= LogLevel::DEBUG) printf("Fetching Api!");
         
         HTTPClient http;
         http.useHTTP10(true);
-        http.begin(apiCombinedURL);
+        http.begin(apiCombinedURL); // https://transport.integration.sl.se/v1/sites/9143/departures?transport=METRO&direction=1&forecast=360
         int httpResponse = http.GET();
-        if (httpResponse > 0) {
+        if (httpResponse > 0) { // Should check for 200. 400 Bad request, etc.
             JsonDocument payload;
             DeserializationError errorGettingJson = deserializeJson(payload, http.getStream());
             if (!errorGettingJson) {
@@ -142,10 +145,13 @@ void NetworkManager::updateFields(Direction& directionObject, JsonVariant source
     Departure& departure = directionObject.departures[index];
 
     if (index < NUM_DEPARTURES) {
-        if (strchr(source["display"], ':') == NULL) { // Departure is in format: "xx min"
+        // Departure is in format: "xx min"
+        if (strchr(source["display"], ':') == NULL) {  
             departure.displayTimeType = TimeDisplayType::MINUTES;
             departure.minutes = Utils::convertTextToMinutes(source["display"]);
-        } else { // Departure is in format: "xx:xx"
+        } 
+        // Departure is in format: "xx:xx"
+        else { 
             departure.displayTimeType = TimeDisplayType::CLOCK_TIME;
             Utils::writeCharArray(
                 departure.clock_time,
@@ -166,7 +172,7 @@ bool NetworkManager::sendToQueue() {
         // Serial.println("Packet successfully sent to dataQueue.");
         return true;
     } else {
-        Serial.println("Error sending packet with dataQueue.");
+        if (logLevel >= LogLevel::DEBUG) printf("Error sending packet with dataQueue.");
         return false;
     }
 }
@@ -174,7 +180,7 @@ bool NetworkManager::sendToQueue() {
 void NetworkManager::waitForSettingsPackage() {
     while (1) {
         if (xQueueReceive(settingsQueue, (void *)&settingsData, pdMS_TO_TICKS(300)) == pdTRUE) {
-            Serial.print("Settings received on core: "); Serial.println(xPortGetCoreID());
+            if (logLevel >= LogLevel::DEBUG) printf("Settings received on core: %d", xPortGetCoreID());
             break;
         }
     }

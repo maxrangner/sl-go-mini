@@ -12,11 +12,11 @@ void SystemManager::init() {
     
     // Queues
     dataQueue = xQueueCreate(QUEUE_LEN, sizeof(QueuePacket));
-    if (dataQueue != nullptr) Serial.println("Data queue created!");
-    else Serial.println("Error creating queue.");
+    if (dataQueue != nullptr && logLevel >= LogLevel::DEBUG) printf("QueuePacket queue created!\n");
+    else if (logLevel >= LogLevel::DEBUG) printf("Error creating dataQueue.\n");
     settingsQueue = xQueueCreate(QUEUE_LEN, sizeof(SettingsPacket));
-    if (settingsQueue != nullptr) Serial.println("Settings queue created!");
-    else Serial.println("Error creating queue.");
+    if (settingsQueue != nullptr && logLevel >= LogLevel::DEBUG) printf("Settings queue created!\n");
+    else if (logLevel >= LogLevel::DEBUG) printf("Error creating settingsQueue.\n");
 
     // Modules inits
     matrix.init();
@@ -78,7 +78,7 @@ void SystemManager::run() {
                 matrix.displayIcon(0);
                 settingsPacketSent = true;
             }
-            if (!bootFinished && animationFrame > 10) {
+            if (!bootFinished && animationFrame > 100) {
                     bootFinished = true;
                     setSystemState(EventType::NO_WIFI);
             }
@@ -113,17 +113,19 @@ void SystemManager::showDeparture() {
     if (newData && numDeparture > 0) { // !!! Separate the conditions
         if (numDeparture > 0 && departure.displayTimeType == TimeDisplayType::MINUTES) {
             matrix.displayDeparture(departure.minutes); 
-            Serial.print("Next departure: "); Serial.print(receivedData.direction[direction].departures[0].minutes); Serial.println(" min");
+            if (logLevel >= LogLevel::DEBUG) printf("Next departure: %d min\n", receivedData.direction[direction].departures[0].minutes);
         } else if (numDeparture > 0 && departure.displayTimeType == TimeDisplayType::CLOCK_TIME) {
             char timeBuffer[10];
             strcpy(timeBuffer, receivedData.direction[settingsData.settingDirectionCode - 1].departures[0].clock_time);
             matrix.displayClocktime(timeBuffer, animationFrame);
-            Serial.print("Next departure: "); Serial.println(receivedData.direction[direction].departures[0].clock_time);
+            if (logLevel >= LogLevel::DEBUG) printf("Next departure: %d\n", receivedData.direction[direction].departures[0].clock_time);
         }
-        newData = false;
     }
-
-
+    // char timeBuffer[10];
+    // strcpy(timeBuffer, receivedData.direction[settingsData.settingDirectionCode - 1].departures[2].clock_time);
+    // matrix.displayClocktime(timeBuffer, animationFrame);
+    // Serial.print("Third departure: "); Serial.println(receivedData.direction[direction].departures[2].clock_time);
+    newData = false;
 }
 
 bool SystemManager::setSystemState(EventType event) {
@@ -138,18 +140,18 @@ bool SystemManager::setSystemState(EventType event) {
 
     if (newState == systemState) return false;
     systemState = newState;
-    printSystemState();
+    if (logLevel >= LogLevel::DEBUG) printSystemState();
     return true;
 }
 
 void SystemManager::checkForNewPackage() {
     if (xQueueReceive(dataQueue, (void *)&receivedData, 0) == pdTRUE) {
-        Serial.println("Packet received!");
+        if (logLevel >= LogLevel::DEBUG) printf("Packet received!\n");
         setSystemState(receivedData.type);
         if (receivedData.type == EventType::DATA) {
             newData = true;
         } 
-        printPackage();
+        if (logLevel >= LogLevel::DEBUG) printPackage();
     }
 }
 
@@ -163,27 +165,23 @@ void SystemManager::updateAnimationFrame() {
 }
 
 void SystemManager::systemTask(void* pvParameters) {
-    Serial.print("systemTask running on core ");
-    Serial.println(xPortGetCoreID());
-
+    if (logLevel >= LogLevel::DEBUG) printf("systemTask running on core %d\n", xPortGetCoreID());
     SystemManager* systemManager = static_cast<SystemManager*>(pvParameters);
 
     while(1) {
         systemManager->run();
-        vTaskDelay(pdMS_TO_TICKS(10));
+        vTaskDelay(pdMS_TO_TICKS(SYSTEM_MANAGER_UPDATE));
     }
 }
 
 void SystemManager::networkTask(void* pvParameters) {
     vTaskDelay(pdMS_TO_TICKS(200));
-    Serial.print("networkTask running on core ");
-    Serial.println(xPortGetCoreID());
-
+    if (logLevel >= LogLevel::DEBUG) printf("networkTask running on core %d\n", xPortGetCoreID());
     NetworkManager* network = static_cast<NetworkManager*>(pvParameters);
 
     while(1) {
         network->run();
-        vTaskDelay(pdMS_TO_TICKS(200));
+        vTaskDelay(pdMS_TO_TICKS(NETWORK_MANAGER_UPDATE));
     } 
 }
 

@@ -3,9 +3,12 @@
 #include "GawiButtons.h"
 #include "LedMatrix.h"
 #include "NetworkManager.h"
+#include "config.h"
 #include "utils.h"
 #include "apiDataTypes.h"
 #include "queuePackets.h"
+
+extern LogLevel logLevel;
 
 enum class SystemState {
     BOOT, // 0

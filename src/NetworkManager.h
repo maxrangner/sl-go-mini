@@ -5,6 +5,8 @@
 #include "apiDataTypes.h"
 #include "queuePackets.h"
 
+extern LogLevel logLevel;
+
 enum class NetworkState {
     INIT,
     CONNECTING_STA,

@@ -2,7 +2,7 @@
 #include <FastLED.h>
 #include "config.h"
 
-#define LED_PIN 14
+extern LogLevel logLevel;
 
 class LedMatrix {
     CRGB leds[PIXELS_NUM];
@@ -18,7 +18,7 @@ public:
     void setColor();
     void animateColor();
     void displayDeparture(uint8_t timeToDeparture);
-    void displayClocktime(const char* timeStr, unsigned long animationFrame, uint8_t scrollSpeed = 5);
+    void displayClocktime(const char* timeStr, unsigned long animationFrame, uint8_t scrollSpeed = 3);
     void displayIcon(uint8_t index);
     void bootAnimation(unsigned long frame);
     void connectionAnimation(unsigned long frame);

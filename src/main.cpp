@@ -8,8 +8,10 @@
 */
 
 SystemManager SysMng;
+LogLevel logLevel;
 
 void setup() {
+  logLevel = LogLevel::NONE;
   Serial.begin(115200);
   delay(1500);
   Serial.println("BOOT!");

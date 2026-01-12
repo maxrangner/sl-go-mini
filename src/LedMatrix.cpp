@@ -6,7 +6,7 @@ LedMatrix::LedMatrix() {
 }
 
 void LedMatrix::init() {
-    Serial.println("FastLED init()");
+    if (logLevel >= LogLevel::DEBUG) printf("FastLED init()");
     FastLED.addLeds<WS2812B, LED_PIN, RGB>(leds, PIXELS_NUM);
     FastLED.clear();
     FastLED.show();
@@ -155,9 +155,9 @@ void LedMatrix::scrollGraphics(const uint8_t** graphicSequence, uint8_t numGraph
             
             uint8_t ledIndex = row * 8 + col;
             if (pixelValue == 1) {
-                leds[ledIndex].r = 1;
+                leds[ledIndex].r = 0;
                 leds[ledIndex].g = 1;
-                leds[ledIndex].b = 1;
+                leds[ledIndex].b = 0;
             } else {
                 leds[ledIndex].r = 0;
                 leds[ledIndex].g = 0;
